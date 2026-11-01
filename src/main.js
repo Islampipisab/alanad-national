@@ -4,6 +4,7 @@ import Lenis from 'lenis';
 import { STRINGS, PARTNERS, CONTACT } from './data/i18n.js';
 import products from './data/products.json';
 import { createGlassFold } from './effects/glass-fold/createGlassFold.js';
+import { mountCylinderCarousel } from './effects/cylinder-carousel.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -42,6 +43,7 @@ function applyI18n(locale) {
 
   localStorage.setItem('lang', locale);
   renderProducts();
+  carouselApi?.setLabels?.(locale);
 }
 
 function splitHeadings() {
@@ -110,6 +112,119 @@ function initGlassFold() {
     canvas.classList.add('is-fallback');
     return null;
   }
+}
+
+const PRODUCT_CAROUSEL_ITEMS = [
+  {
+    id: 'seasonal',
+    image: '/img/categories/seasonal.jpg',
+    titleAr: 'منتجات موسمية',
+    titleEn: 'Seasonal products',
+  },
+  {
+    id: 'leafy',
+    image: '/img/categories/leafy.jpg',
+    titleAr: 'الخضروات الورقية',
+    titleEn: 'Leafy greens',
+  },
+  {
+    id: 'staple',
+    image: '/img/categories/staple.jpg',
+    titleAr: 'المحاصيل الأساسية',
+    titleEn: 'Staple crops',
+  },
+  {
+    id: 'vegetables',
+    image: '/img/categories/vegetables.jpg',
+    titleAr: 'الخضروات',
+    titleEn: 'Vegetables',
+  },
+  {
+    id: 'fruits',
+    image: '/img/categories/fruits.jpg',
+    titleAr: 'الفواكه',
+    titleEn: 'Fruits',
+  },
+  {
+    id: 'tomato',
+    image: '/img/products/tomato.jpg',
+    titleAr: 'طماطم',
+    titleEn: 'Tomato',
+  },
+  {
+    id: 'cucumber',
+    image: '/img/products/cucumber.jpg',
+    titleAr: 'خيار',
+    titleEn: 'Cucumber',
+  },
+  {
+    id: 'pepper',
+    image: '/img/products/red-pepper.jpg',
+    titleAr: 'فلفل',
+    titleEn: 'Pepper',
+  },
+  {
+    id: 'carrot',
+    image: '/img/products/carrot.jpg',
+    titleAr: 'جزر',
+    titleEn: 'Carrot',
+  },
+  {
+    id: 'cabbage',
+    image: '/img/products/cabbage.jpg',
+    titleAr: 'ملفوف',
+    titleEn: 'Cabbage',
+  },
+  {
+    id: 'strawberry',
+    image: '/img/products/strawberry.jpg',
+    titleAr: 'فراولة',
+    titleEn: 'Strawberry',
+  },
+  {
+    id: 'grape',
+    image: '/img/products/red-grapes.jpg',
+    titleAr: 'عنب',
+    titleEn: 'Grape',
+  },
+];
+
+let carouselApi = null;
+
+function initProductsCarousel() {
+  const root = document.querySelector('#productsCarousel');
+  if (!root) return;
+  carouselApi = mountCylinderCarousel(root, {
+    items: PRODUCT_CAROUSEL_ITEMS,
+    reduced,
+    locale: langNow(),
+    onSelect: (index) => {
+      const cat = PRODUCT_CAROUSEL_ITEMS[index];
+      const catalog = document.querySelector('#catalog');
+      catalog?.removeAttribute('hidden');
+      const map = {
+        leafy: 'leaf',
+        fruits: 'fruit',
+        vegetables: 'veg',
+        staple: 'veg',
+        seasonal: '',
+        tomato: 'veg',
+        cucumber: 'veg',
+        pepper: 'veg',
+        carrot: 'veg',
+        cabbage: 'leaf',
+        strawberry: 'fruit',
+        grape: 'fruit',
+      };
+      const want = map[cat.id] ?? '';
+      renderProducts();
+      if (want) {
+        [...document.querySelectorAll('#productGrid .pcard')].forEach((card) => {
+          card.hidden = card.dataset.cat !== want;
+        });
+      }
+    },
+  });
 }
 
 function initLogoVideo() {
@@ -182,26 +297,18 @@ function initParallax() {
   if (reduced) return;
   const layer = document.querySelector('.hero__produce');
   if (!layer) return;
-  const nodes = [...layer.querySelectorAll('[data-depth]')];
+  // Outer .hero__float nodes only — trampoline runs on inner <img>
+  const nodes = [...layer.querySelectorAll('.hero__float[data-depth]')];
 
   const onMove = (e) => {
     const x = (e.clientX / window.innerWidth - 0.5) * 2;
     const y = (e.clientY / window.innerHeight - 0.5) * 2;
     nodes.forEach((n) => {
       const d = Number(n.dataset.depth || 0.2);
-      n.style.transform = `translate3d(${x * d * -28}px, ${y * d * -20}px, 0) rotate(${n.classList.contains('hero__crate') ? -6 : 0}deg)`;
+      n.style.transform = `translate3d(${x * d * -22}px, ${y * d * -14}px, 0)`;
     });
   };
   window.addEventListener('pointermove', onMove, { passive: true });
-
-  gsap.to('.hero__float', {
-    y: -16,
-    duration: 2.8,
-    yoyo: true,
-    repeat: -1,
-    ease: 'sine.inOut',
-    stagger: 0.35,
-  });
 }
 
 function initTilt() {
@@ -263,7 +370,7 @@ function initMotion(lenis) {
     )
     .from('.hero__sub, .hero__lead', { y: 24, opacity: 0, duration: 0.7, stagger: 0.1 }, 0.95)
     .from('.hero__ctas .btn', { y: 20, opacity: 0, duration: 0.55, stagger: 0.08 }, 1.15)
-    .from('.hero__crate, .hero__float', { y: 40, opacity: 0, duration: 0.9, stagger: 0.08 }, 0.85)
+    .from('.hero__float', { y: 40, opacity: 0, duration: 0.9, stagger: 0.08 }, 0.85)
     .from('.hero__stats', { y: 40, opacity: 0, duration: 0.8 }, 1.25);
 
   document.querySelectorAll('[data-reveal]').forEach((el) => {
@@ -439,6 +546,7 @@ renderProducts();
 initUI();
 initGlassFold();
 initLogoVideo();
+initProductsCarousel();
 initAboutMedia();
 initParallax();
 initTilt();

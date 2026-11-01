@@ -478,44 +478,104 @@ html[dir='rtl'] .btn__arrow {
   pointer-events: none;
 }
 
-.hero__crate {
-  position: absolute;
-  inset-block-end: 18%;
-  inset-inline-start: 4%;
-  width: min(340px, 34vw);
-  aspect-ratio: 1;
-  object-fit: cover;
-  border-radius: 28px;
-  box-shadow: var(--shadow);
-  border: 3px solid rgba(255, 255, 255, 0.18);
-  transform: rotate(-6deg);
-}
-
 .hero__float {
   position: absolute;
-  width: clamp(72px, 9vw, 120px);
+  z-index: 3;
+  width: clamp(38px, 4vw, 56px);
   aspect-ratio: 1;
-  object-fit: cover;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.34);
+  overflow: hidden;
+  will-change: transform;
 }
 
+.hero__float img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 50%;
+  will-change: transform;
+  animation: trampoline 2.55s cubic-bezier(0.22, 1.35, 0.36, 1) infinite;
+}
+
+/* Loose orbital ring (RTL: inline-start = right) around empty produce focal */
 .hero__float--1 {
-  inset-block-start: 24%;
-  inset-inline-start: 18%;
+  /* ~12 o'clock */
+  inset-block-start: 14%;
+  inset-inline-start: 20%;
+  width: clamp(40px, 4.2vw, 58px);
 }
 
 .hero__float--2 {
-  inset-block-start: 42%;
-  inset-inline-start: 8%;
-  width: clamp(58px, 7vw, 92px);
+  /* ~2 o'clock */
+  inset-block-start: 26%;
+  inset-inline-start: 7%;
+  width: clamp(36px, 3.8vw, 52px);
 }
 
 .hero__float--3 {
-  inset-block-end: 34%;
-  inset-inline-start: 28%;
-  width: clamp(64px, 8vw, 100px);
+  /* ~5 o'clock */
+  inset-block-end: 24%;
+  inset-inline-start: 5%;
+  width: clamp(38px, 4vw, 54px);
+}
+
+.hero__float--4 {
+  /* ~7 o'clock */
+  inset-block-end: 12%;
+  inset-inline-start: 20%;
+  width: clamp(34px, 3.6vw, 50px);
+}
+
+.hero__float--5 {
+  /* ~9 o'clock */
+  inset-block-end: 28%;
+  inset-inline-start: 36%;
+  width: clamp(37px, 3.9vw, 54px);
+}
+
+.hero__float--6 {
+  /* ~10–11 o'clock */
+  inset-block-start: 24%;
+  inset-inline-start: 35%;
+  width: clamp(32px, 3.4vw, 48px);
+}
+
+@keyframes trampoline {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  28% {
+    transform: translateY(-16px);
+  }
+  44% {
+    transform: translateY(3px);
+  }
+  58% {
+    transform: translateY(-8px);
+  }
+  72% {
+    transform: translateY(1px);
+  }
+  84% {
+    transform: translateY(-3px);
+  }
+}
+
+.hero__float--1 img { animation-delay: 0s; }
+.hero__float--2 img { animation-delay: 0.28s; }
+.hero__float--3 img { animation-delay: 0.55s; }
+.hero__float--4 img { animation-delay: 0.82s; }
+.hero__float--5 img { animation-delay: 1.08s; }
+.hero__float--6 img { animation-delay: 1.32s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__float img {
+    animation: none !important;
+  }
 }
 
 .hero__content {
@@ -1284,12 +1344,6 @@ html[dir='rtl'] .marquee__track {
     grid-template-columns: repeat(3, 1fr);
   }
 
-  .hero__crate {
-    opacity: 0.55;
-    width: min(220px, 42vw);
-    inset-block-end: 28%;
-  }
-
   .hero__float {
     display: none;
   }
@@ -1330,5 +1384,214 @@ html[dir='rtl'] .marquee__track {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* 3D cylinder photo carousel (vanilla port of Framer Motion 3d-carousel) */
+.cyl-wrap {
+  margin-top: 0.75rem;
+}
+
+.cyl {
+  position: relative;
+  border-radius: 28px;
+  overflow: hidden;
+  border: 1px solid rgba(181, 217, 91, 0.16);
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(181, 217, 91, 0.12), transparent 55%),
+    rgba(4, 22, 16, 0.42);
+}
+
+.cyl__stage {
+  position: relative;
+  height: min(460px, 62vh);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cyl__stage.is-dragging {
+  cursor: grabbing;
+}
+
+.cyl__hint {
+  position: absolute;
+  inset-inline-end: 1rem;
+  top: 0.85rem;
+  z-index: 3;
+  margin: 0;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: rgba(243, 247, 239, 0.9);
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+
+.cyl__viewport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+.cyl__ring {
+  position: relative;
+  display: flex;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform-origin: center center;
+  justify-content: center;
+}
+
+.cyl__face {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0.65rem;
+  border: 0;
+  background: transparent;
+  transform-origin: center center;
+  cursor: pointer;
+  color: inherit;
+}
+
+.cyl__card {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(181, 217, 91, 0.22);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  background: rgba(8, 41, 29, 0.65);
+  aspect-ratio: 16 / 10;
+  max-height: 168px;
+}
+
+.cyl__card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  display: block;
+}
+
+.cyl__label {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  padding: 0.55rem 0.7rem;
+  background: linear-gradient(transparent, rgba(4, 22, 16, 0.88));
+  color: var(--ink, #f3f7ef);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: start;
+}
+
+.cyl--reduced .cyl__stage {
+  height: auto;
+  cursor: default;
+}
+
+.cyl--reduced .cyl__viewport {
+  display: block;
+  overflow-x: auto;
+  perspective: none !important;
+}
+
+.cyl--reduced .cyl__ring {
+  display: flex;
+  width: max-content !important;
+  gap: 0.85rem;
+  padding: 1.25rem;
+  transform: none !important;
+}
+
+.cyl--reduced .cyl__face {
+  position: relative;
+  width: min(240px, 70vw) !important;
+  height: auto;
+  transform: none !important;
+  padding: 0;
+}
+
+.cyl--reduced .cyl__card {
+  max-height: none;
+  aspect-ratio: 4 / 3;
+}
+
+.cyl__lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(2, 14, 10, 0.82);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+.cyl__lightbox.is-open {
+  opacity: 1;
+}
+
+.cyl__lightbox-figure {
+  margin: 0;
+  width: min(820px, 100%);
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(181, 217, 91, 0.25);
+  background: #08291d;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+}
+
+.cyl__lightbox-figure img {
+  width: 100%;
+  max-height: min(72vh, 640px);
+  object-fit: cover;
+  display: block;
+}
+
+.cyl__lightbox-figure figcaption {
+  padding: 1rem 1.15rem 1.2rem;
+  color: var(--ink, #f3f7ef);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.cyl__lightbox-close {
+  position: absolute;
+  top: 1rem;
+  inset-inline-end: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+html.cyl-lightbox-open {
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .cyl__stage {
+    height: min(360px, 58vh);
+  }
+
+  .cyl__card {
+    max-height: 112px;
+    border-radius: 12px;
   }
 }

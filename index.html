@@ -91,30 +91,24 @@
       <!-- HERO -->
       <section class="hero" id="hero">
         <div class="hero__produce" aria-hidden="true">
-          <img
-            class="hero__crate"
-            src="/img/products/tomato.jpg"
-            alt=""
-            data-depth="0.18"
-          />
-          <img
-            class="hero__float hero__float--1"
-            src="/img/products/red-pepper.jpg"
-            alt=""
-            data-depth="0.32"
-          />
-          <img
-            class="hero__float hero__float--2"
-            src="/img/products/cabbage.jpg"
-            alt=""
-            data-depth="0.24"
-          />
-          <img
-            class="hero__float hero__float--3"
-            src="/img/products/carrot.jpg"
-            alt=""
-            data-depth="0.4"
-          />
+          <div class="hero__float hero__float--1" data-depth="0.28">
+            <img src="/img/products/red-pepper.jpg" alt="" />
+          </div>
+          <div class="hero__float hero__float--2" data-depth="0.22">
+            <img src="/img/products/cabbage.jpg" alt="" />
+          </div>
+          <div class="hero__float hero__float--3" data-depth="0.36">
+            <img src="/img/products/carrot.jpg" alt="" />
+          </div>
+          <div class="hero__float hero__float--4" data-depth="0.3">
+            <img src="/img/products/strawberry.jpg" alt="" />
+          </div>
+          <div class="hero__float hero__float--5" data-depth="0.2">
+            <img src="/img/products/apple.jpg" alt="" />
+          </div>
+          <div class="hero__float hero__float--6" data-depth="0.34">
+            <img src="/img/products/tomato.jpg" alt="" />
+          </div>
         </div>
 
         <div class="hero__content">
@@ -296,27 +290,16 @@
             </button>
           </header>
 
-          <div class="cat-grid" id="catGrid">
-            <a class="cat" href="#catalog" data-cat="seasonal" data-tilt data-reveal>
-              <img src="/img/categories/seasonal.jpg" alt="" loading="lazy" />
-              <span data-i18n="products.cats.0.t">منتجات موسمية</span>
-            </a>
-            <a class="cat" href="#catalog" data-cat="leafy" data-tilt data-reveal>
-              <img src="/img/categories/leafy.jpg" alt="" loading="lazy" />
-              <span data-i18n="products.cats.1.t">الخضروات الورقية</span>
-            </a>
-            <a class="cat" href="#catalog" data-cat="staple" data-tilt data-reveal>
-              <img src="/img/categories/staple.jpg" alt="" loading="lazy" />
-              <span data-i18n="products.cats.2.t">المحاصيل الأساسية</span>
-            </a>
-            <a class="cat" href="#catalog" data-cat="vegetables" data-tilt data-reveal>
-              <img src="/img/categories/vegetables.jpg" alt="" loading="lazy" />
-              <span data-i18n="products.cats.3.t">الخضروات</span>
-            </a>
-            <a class="cat" href="#catalog" data-cat="fruits" data-tilt data-reveal>
-              <img src="/img/categories/fruits.jpg" alt="" loading="lazy" />
-              <span data-i18n="products.cats.4.t">الفواكه</span>
-            </a>
+          <div class="cyl-wrap" data-reveal>
+            <div id="productsCarousel" class="cyl" aria-label="منتجاتنا"></div>
+          </div>
+
+          <div class="cat-grid cat-grid--assist" id="catGrid" hidden>
+            <a class="cat" href="#catalog" data-cat="seasonal"><span data-i18n="products.cats.0.t">منتجات موسمية</span></a>
+            <a class="cat" href="#catalog" data-cat="leafy"><span data-i18n="products.cats.1.t">الخضروات الورقية</span></a>
+            <a class="cat" href="#catalog" data-cat="staple"><span data-i18n="products.cats.2.t">المحاصيل الأساسية</span></a>
+            <a class="cat" href="#catalog" data-cat="vegetables"><span data-i18n="products.cats.3.t">الخضروات</span></a>
+            <a class="cat" href="#catalog" data-cat="fruits"><span data-i18n="products.cats.4.t">الفواكه</span></a>
           </div>
 
           <p class="products__note" data-i18n="products.note" data-reveal></p>
