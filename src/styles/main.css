@@ -926,23 +926,36 @@ html[dir='ltr'] .hero__content {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.cat-grid[hidden],
+.catalog[hidden] {
+  display: none !important;
 }
 
 .cat {
   position: relative;
+  display: block;
   border-radius: 22px;
   overflow: hidden;
   aspect-ratio: 3 / 4;
   color: #fff;
-  box-shadow: 0 16px 40px rgba(8, 41, 29, 0.14);
+  background: rgba(8, 41, 29, 0.55);
+  border: 1px solid rgba(181, 217, 91, 0.16);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
   transform-style: preserve-3d;
   will-change: transform;
+  text-decoration: none;
 }
 
 .cat img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
   transition: transform 0.7s var(--ease);
 }
 
@@ -950,16 +963,19 @@ html[dir='ltr'] .hero__content {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 35%, rgba(8, 41, 29, 0.88));
+  z-index: 1;
+  background: linear-gradient(180deg, transparent 42%, rgba(4, 22, 16, 0.92));
+  pointer-events: none;
 }
 
 .cat span {
   position: absolute;
   inset-inline: 0.9rem;
   bottom: 0.95rem;
-  z-index: 1;
+  z-index: 2;
   font-weight: 700;
   font-size: 1rem;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
 }
 
 .cat:hover img {
@@ -1442,11 +1458,12 @@ html[dir='rtl'] .marquee__track {
   position: relative;
   height: min(460px, 62vh);
   cursor: grab;
-  touch-action: none;
+  /* Allow vertical page scroll; horizontal gestures rotate the cylinder */
+  touch-action: pan-y;
   user-select: none;
   -webkit-user-select: none;
   outline: none;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: contain;
   pointer-events: auto;
 }
 

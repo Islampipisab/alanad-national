@@ -57,14 +57,17 @@ export function mountCylinderCarousel(root, opts = {}) {
   const state = {
     rotation: 0,
     dragging: false,
+    axis: null, // null | 'x' | 'y' — lock after small threshold
     moved: false,
     lastX: 0,
+    lastY: 0,
     velocity: 0,
     lastT: 0,
     pointerId: null,
     lenisPaused: false,
   };
   const proxy = { y: 0 };
+  const AXIS_LOCK_PX = 6;
 
   const isSmall = () => window.matchMedia('(max-width: 768px)').matches;
   const titleOf = (item) => (locale === 'en' ? item.titleEn : item.titleAr);
@@ -153,44 +156,73 @@ export function mountCylinderCarousel(root, opts = {}) {
 
   const onPointerDown = (e) => {
     if (e.button != null && e.button !== 0) return;
-    e.preventDefault();
+    // Don't preventDefault here — vertical touch/mouse-drag must stay free for page scroll
     state.dragging = true;
+    state.axis = null;
     state.moved = false;
     state.lastX = e.clientX;
+    state.lastY = e.clientY;
     state.velocity = 0;
     state.lastT = performance.now();
     state.pointerId = e.pointerId;
     gsap.killTweensOf(proxy);
     proxy.y = state.rotation;
-    stage.classList.add('is-dragging');
-    pauseLenis();
-    try {
-      stage.setPointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
-    }
   };
 
   const onPointerMove = (e) => {
     if (!state.dragging) return;
     if (state.pointerId != null && e.pointerId !== state.pointerId) return;
+
+    const dx = e.clientX - state.lastX;
+    const dy = e.clientY - state.lastY;
+
+    // Axis lock: vertical intent → abandon rotate, let Lenis/page scroll
+    if (!state.axis) {
+      if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return;
+      state.axis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y';
+      if (state.axis === 'y') {
+        state.dragging = false;
+        state.pointerId = null;
+        stage.classList.remove('is-dragging');
+        resumeLenis();
+        return;
+      }
+      // Confirmed horizontal rotate
+      stage.classList.add('is-dragging');
+      pauseLenis();
+      try {
+        stage.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    if (state.axis !== 'x') return;
+
     e.preventDefault();
     const now = performance.now();
-    const dx = e.clientX - state.lastX;
     if (Math.abs(dx) > 2) state.moved = true;
     const dt = Math.max(8, now - state.lastT);
     state.velocity = dx / dt;
     state.rotation += dx * CONFIG.dragSensitivity;
     state.lastX = e.clientX;
+    state.lastY = e.clientY;
     state.lastT = now;
     proxy.y = state.rotation;
     gsap.set(ring, { rotationY: state.rotation, force3D: true });
   };
 
   const endDrag = (e) => {
-    if (!state.dragging) return;
+    if (!state.dragging && state.axis !== 'x') {
+      state.dragging = false;
+      state.axis = null;
+      state.pointerId = null;
+      return;
+    }
     if (e && state.pointerId != null && e.pointerId !== state.pointerId) return;
+    const wasHorizontal = state.axis === 'x';
     state.dragging = false;
+    state.axis = null;
     stage.classList.remove('is-dragging');
     try {
       if (state.pointerId != null) stage.releasePointerCapture(state.pointerId);
@@ -198,28 +230,32 @@ export function mountCylinderCarousel(root, opts = {}) {
       /* ignore */
     }
     state.pointerId = null;
-    // px/ms → degrees of coast
+    if (!wasHorizontal) {
+      resumeLenis();
+      return;
+    }
     const momentum = Math.abs(state.velocity) > 0.05 ? state.velocity * 180 : 0;
     state.rotation += momentum;
     paint(false);
-    // keep Lenis paused briefly so settle doesn't fight page scroll
     window.setTimeout(resumeLenis, 120);
   };
 
   const onWheel = (e) => {
-    // Prefer horizontal trackpad delta; fall back to vertical-as-rotate
-    const raw =
-      Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    if (!raw) return;
+    const absX = Math.abs(e.deltaX);
+    const absY = Math.abs(e.deltaY);
+    // Vertical (or mostly vertical) → never trap; Lenis/page scroll passes through
+    if (absY >= absX) return;
+    if (!e.deltaX) return;
+
     e.preventDefault();
     e.stopPropagation();
     pauseLenis();
     gsap.killTweensOf(proxy);
-    const clamped = Math.sign(raw) * Math.min(Math.abs(raw), 120);
+    const clamped = Math.sign(e.deltaX) * Math.min(absX, 120);
     state.rotation = proxy.y + clamped * CONFIG.wheelSensitivity;
     paint(false);
     window.clearTimeout(onWheel._resumeTimer);
-    onWheel._resumeTimer = window.setTimeout(resumeLenis, 220);
+    onWheel._resumeTimer = window.setTimeout(resumeLenis, 180);
   };
 
   const openLightbox = (index) => {
