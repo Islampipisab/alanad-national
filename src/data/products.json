@@ -1,0 +1,452 @@
+[
+  {
+    "slug": "tomato",
+    "ar": "طماطم",
+    "en": "Tomato",
+    "cat": "veg"
+  },
+  {
+    "slug": "cucumber",
+    "ar": "خيار",
+    "en": "Cucumber",
+    "cat": "veg"
+  },
+  {
+    "slug": "potato",
+    "ar": "بطاطس",
+    "en": "Potato",
+    "cat": "veg"
+  },
+  {
+    "slug": "onion",
+    "ar": "بصل أصفر",
+    "en": "Yellow onion",
+    "cat": "veg"
+  },
+  {
+    "slug": "red-onion",
+    "ar": "بصل أحمر",
+    "en": "Red onion",
+    "cat": "veg"
+  },
+  {
+    "slug": "carrot",
+    "ar": "جزر",
+    "en": "Carrot",
+    "cat": "veg"
+  },
+  {
+    "slug": "zucchini",
+    "ar": "كوسا",
+    "en": "Zucchini",
+    "cat": "veg"
+  },
+  {
+    "slug": "eggplant",
+    "ar": "باذنجان",
+    "en": "Eggplant",
+    "cat": "veg"
+  },
+  {
+    "slug": "green-pepper",
+    "ar": "فلفل رومي أخضر",
+    "en": "Green bell pepper",
+    "cat": "veg"
+  },
+  {
+    "slug": "red-pepper",
+    "ar": "فلفل ملوّن",
+    "en": "Bell pepper",
+    "cat": "veg"
+  },
+  {
+    "slug": "chili",
+    "ar": "فلفل حار",
+    "en": "Chili pepper",
+    "cat": "veg"
+  },
+  {
+    "slug": "sweet-potato",
+    "ar": "بطاطا حلوة",
+    "en": "Sweet potato",
+    "cat": "veg"
+  },
+  {
+    "slug": "broccoli",
+    "ar": "بروكلي",
+    "en": "Broccoli",
+    "cat": "veg"
+  },
+  {
+    "slug": "cauliflower",
+    "ar": "قرنبيط",
+    "en": "Cauliflower",
+    "cat": "veg"
+  },
+  {
+    "slug": "corn",
+    "ar": "ذرة",
+    "en": "Sweet corn",
+    "cat": "veg"
+  },
+  {
+    "slug": "garlic",
+    "ar": "ثوم",
+    "en": "Garlic",
+    "cat": "veg"
+  },
+  {
+    "slug": "ginger",
+    "ar": "زنجبيل",
+    "en": "Ginger",
+    "cat": "veg"
+  },
+  {
+    "slug": "cabbage",
+    "ar": "ملفوف",
+    "en": "Cabbage",
+    "cat": "veg"
+  },
+  {
+    "slug": "red-cabbage",
+    "ar": "ملفوف أحمر",
+    "en": "Red cabbage",
+    "cat": "veg"
+  },
+  {
+    "slug": "beetroot",
+    "ar": "شمندر",
+    "en": "Beetroot",
+    "cat": "veg"
+  },
+  {
+    "slug": "radish",
+    "ar": "فجل",
+    "en": "Radish",
+    "cat": "veg"
+  },
+  {
+    "slug": "turnip",
+    "ar": "لفت",
+    "en": "Turnip",
+    "cat": "veg"
+  },
+  {
+    "slug": "pumpkin",
+    "ar": "قرع",
+    "en": "Pumpkin",
+    "cat": "veg"
+  },
+  {
+    "slug": "okra",
+    "ar": "بامية",
+    "en": "Okra",
+    "cat": "veg"
+  },
+  {
+    "slug": "green-beans",
+    "ar": "فاصوليا خضراء",
+    "en": "Green beans",
+    "cat": "veg"
+  },
+  {
+    "slug": "peas",
+    "ar": "بازلاء",
+    "en": "Peas",
+    "cat": "veg"
+  },
+  {
+    "slug": "celery",
+    "ar": "كرفس",
+    "en": "Celery",
+    "cat": "veg"
+  },
+  {
+    "slug": "leek",
+    "ar": "كراث",
+    "en": "Leek",
+    "cat": "veg"
+  },
+  {
+    "slug": "mushroom",
+    "ar": "فطر",
+    "en": "Mushroom",
+    "cat": "veg"
+  },
+  {
+    "slug": "spring-onion",
+    "ar": "بصل أخضر",
+    "en": "Spring onion",
+    "cat": "veg"
+  },
+  {
+    "slug": "artichoke",
+    "ar": "خرشوف",
+    "en": "Artichoke",
+    "cat": "veg"
+  },
+  {
+    "slug": "asparagus",
+    "ar": "هليون",
+    "en": "Asparagus",
+    "cat": "veg"
+  },
+  {
+    "slug": "lettuce",
+    "ar": "خس",
+    "en": "Lettuce",
+    "cat": "leaf"
+  },
+  {
+    "slug": "romaine",
+    "ar": "خس روماني",
+    "en": "Romaine lettuce",
+    "cat": "leaf"
+  },
+  {
+    "slug": "rocket",
+    "ar": "جرجير",
+    "en": "Rocket",
+    "cat": "leaf"
+  },
+  {
+    "slug": "parsley",
+    "ar": "بقدونس",
+    "en": "Parsley",
+    "cat": "leaf"
+  },
+  {
+    "slug": "mint",
+    "ar": "نعناع",
+    "en": "Mint",
+    "cat": "leaf"
+  },
+  {
+    "slug": "spinach",
+    "ar": "سبانخ",
+    "en": "Spinach",
+    "cat": "leaf"
+  },
+  {
+    "slug": "coriander",
+    "ar": "كزبرة",
+    "en": "Coriander",
+    "cat": "leaf"
+  },
+  {
+    "slug": "dill",
+    "ar": "شبت",
+    "en": "Dill",
+    "cat": "leaf"
+  },
+  {
+    "slug": "basil",
+    "ar": "ريحان",
+    "en": "Basil",
+    "cat": "leaf"
+  },
+  {
+    "slug": "chard",
+    "ar": "سلق",
+    "en": "Swiss chard",
+    "cat": "leaf"
+  },
+  {
+    "slug": "molokhia",
+    "ar": "ملوخية",
+    "en": "Molokhia",
+    "cat": "leaf"
+  },
+  {
+    "slug": "kale",
+    "ar": "كيل",
+    "en": "Kale",
+    "cat": "leaf"
+  },
+  {
+    "slug": "apple",
+    "ar": "تفاح أحمر",
+    "en": "Red apple",
+    "cat": "fruit"
+  },
+  {
+    "slug": "green-apple",
+    "ar": "تفاح أخضر",
+    "en": "Green apple",
+    "cat": "fruit"
+  },
+  {
+    "slug": "orange",
+    "ar": "برتقال",
+    "en": "Orange",
+    "cat": "fruit"
+  },
+  {
+    "slug": "mandarin",
+    "ar": "يوسفي",
+    "en": "Mandarin",
+    "cat": "fruit"
+  },
+  {
+    "slug": "lemon",
+    "ar": "ليمون",
+    "en": "Lemon",
+    "cat": "fruit"
+  },
+  {
+    "slug": "lime",
+    "ar": "ليمون أخضر",
+    "en": "Lime",
+    "cat": "fruit"
+  },
+  {
+    "slug": "grapefruit",
+    "ar": "جريب فروت",
+    "en": "Grapefruit",
+    "cat": "fruit"
+  },
+  {
+    "slug": "green-grapes",
+    "ar": "عنب أخضر",
+    "en": "Green grapes",
+    "cat": "fruit"
+  },
+  {
+    "slug": "red-grapes",
+    "ar": "عنب أحمر",
+    "en": "Red grapes",
+    "cat": "fruit"
+  },
+  {
+    "slug": "banana",
+    "ar": "موز",
+    "en": "Banana",
+    "cat": "fruit"
+  },
+  {
+    "slug": "strawberry",
+    "ar": "فراولة",
+    "en": "Strawberry",
+    "cat": "fruit"
+  },
+  {
+    "slug": "pomegranate",
+    "ar": "رمان",
+    "en": "Pomegranate",
+    "cat": "fruit"
+  },
+  {
+    "slug": "mango",
+    "ar": "مانجو",
+    "en": "Mango",
+    "cat": "fruit"
+  },
+  {
+    "slug": "peach",
+    "ar": "خوخ",
+    "en": "Peach",
+    "cat": "fruit"
+  },
+  {
+    "slug": "nectarine",
+    "ar": "نكتارين",
+    "en": "Nectarine",
+    "cat": "fruit"
+  },
+  {
+    "slug": "plum",
+    "ar": "برقوق",
+    "en": "Plum",
+    "cat": "fruit"
+  },
+  {
+    "slug": "apricot",
+    "ar": "مشمش",
+    "en": "Apricot",
+    "cat": "fruit"
+  },
+  {
+    "slug": "pear",
+    "ar": "كمثرى",
+    "en": "Pear",
+    "cat": "fruit"
+  },
+  {
+    "slug": "kiwi",
+    "ar": "كيوي",
+    "en": "Kiwi",
+    "cat": "fruit"
+  },
+  {
+    "slug": "watermelon",
+    "ar": "بطيخ",
+    "en": "Watermelon",
+    "cat": "fruit"
+  },
+  {
+    "slug": "cantaloupe",
+    "ar": "شمام",
+    "en": "Cantaloupe",
+    "cat": "fruit"
+  },
+  {
+    "slug": "pineapple",
+    "ar": "أناناس",
+    "en": "Pineapple",
+    "cat": "fruit"
+  },
+  {
+    "slug": "papaya",
+    "ar": "بابايا",
+    "en": "Papaya",
+    "cat": "fruit"
+  },
+  {
+    "slug": "guava",
+    "ar": "جوافة",
+    "en": "Guava",
+    "cat": "fruit"
+  },
+  {
+    "slug": "fig",
+    "ar": "تين",
+    "en": "Fig",
+    "cat": "fruit"
+  },
+  {
+    "slug": "cherry",
+    "ar": "كرز",
+    "en": "Cherry",
+    "cat": "fruit"
+  },
+  {
+    "slug": "avocado",
+    "ar": "أفوكادو",
+    "en": "Avocado",
+    "cat": "fruit"
+  },
+  {
+    "slug": "blueberry",
+    "ar": "توت أزرق",
+    "en": "Blueberry",
+    "cat": "fruit"
+  },
+  {
+    "slug": "dates",
+    "ar": "تمر",
+    "en": "Dates",
+    "cat": "fruit"
+  },
+  {
+    "slug": "coconut",
+    "ar": "جوز الهند",
+    "en": "Coconut",
+    "cat": "fruit"
+  },
+  {
+    "slug": "dragon-fruit",
+    "ar": "فاكهة التنين",
+    "en": "Dragon fruit",
+    "cat": "fruit"
+  }
+]
