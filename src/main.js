@@ -37,6 +37,16 @@ function applyI18n(locale) {
     if (typeof value === 'string') el.textContent = value;
   });
 
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+    const value = getByPath(dict, el.dataset.i18nPlaceholder);
+    if (typeof value === 'string') el.setAttribute('placeholder', value);
+  });
+
+  document.querySelectorAll('[data-i18n-aria]').forEach((el) => {
+    const value = getByPath(dict, el.dataset.i18nAria);
+    if (typeof value === 'string') el.setAttribute('aria-label', value);
+  });
+
   document.querySelectorAll('.lang__btn').forEach((btn) => {
     btn.classList.toggle('is-active', btn.dataset.lang === locale);
   });
@@ -199,6 +209,8 @@ function initProductsCarousel(lenis) {
     reduced,
     locale: langNow(),
     lenis,
+    hintAr: STRINGS.ar.products.carouselHint,
+    hintEn: STRINGS.en.products.carouselHint,
     onSelect: (index) => {
       const cat = PRODUCT_CAROUSEL_ITEMS[index];
       const catalog = document.querySelector('#catalog');

@@ -1,7 +1,7 @@
 /** Real company copy — Arabic default, English secondary. */
 export const STRINGS = {
   ar: {
-    brand: { name: 'العناد الوطنية', en: 'AL-ANAD NATIONAL' },
+    brand: { name: 'العناد الوطنية', mark: 'العناد' },
     nav: {
       home: 'الرئيسية',
       about: 'من نحن',
@@ -10,12 +10,14 @@ export const STRINGS = {
       partners: 'شركاؤنا',
       numbers: 'الأرقام',
       contact: 'تواصل معنا',
+      aria: 'القائمة الرئيسية',
     },
-    lang: { ar: 'عربي', en: 'EN' },
+    lang: { ar: 'عربي', en: 'EN', aria: 'اللغة' },
+    ui: { menu: 'القائمة', play: 'تشغيل الفيديو' },
     hero: {
       badge: 'منذ عام 2007',
       title: 'من قلب المزارع، نصنع الفرق في كل محصول.',
-      subtitle: 'From the heart of farms, delivering freshness everywhere.',
+      subtitle: 'من قلب المزارع… نوصّل النضارة إلى كل مكان.',
       lead:
         'كيان تجاري متخصص بتوريد الخضار والفواكه بأعلى معايير الجودة، تحت إشراف كفاءات وخبرات، وبأسرع وسائل النقل المبرّد — من الفرز والتعبئة إلى باب عميلنا بسلسلة تبريد لا تنقطع.',
       cta1: 'استكشف منتجاتنا',
@@ -75,8 +77,9 @@ export const STRINGS = {
       kicker: 'منتجاتنا',
       title: 'منتجاتنا',
       lead: 'أكثر من 75 صنفاً طازجاً بين يديك — تتنوّع بحسب الموسم.',
-      leadEn: 'A diverse range of high-quality vegetables and fruits.',
       all: 'عرض جميع المنتجات',
+      search: 'بحث في الأصناف',
+      carouselHint: 'اسحب للدوران · اضغط للتكبير',
       cats: [
         { id: 'seasonal', t: 'منتجات موسمية', en: 'Seasonal' },
         { id: 'leafy', t: 'الخضروات الورقية', en: 'Leafy greens' },
@@ -143,7 +146,7 @@ export const STRINGS = {
     },
   },
   en: {
-    brand: { name: 'Al-Anad National', en: 'AL-ANAD NATIONAL' },
+    brand: { name: 'Al-Anad National', mark: 'AL-ANAD NATIONAL' },
     nav: {
       home: 'Home',
       about: 'About',
@@ -152,8 +155,10 @@ export const STRINGS = {
       partners: 'Partners',
       numbers: 'Numbers',
       contact: 'Contact',
+      aria: 'Primary navigation',
     },
-    lang: { ar: 'عربي', en: 'EN' },
+    lang: { ar: 'عربي', en: 'EN', aria: 'Language' },
+    ui: { menu: 'Menu', play: 'Play video' },
     hero: {
       badge: 'Since 2007',
       title: 'From the heart of farms, we make the difference in every crop.',
@@ -216,8 +221,9 @@ export const STRINGS = {
       kicker: 'Our products',
       title: 'Our products',
       lead: 'More than 75 fresh varieties — available by season.',
-      leadEn: 'A diverse range of high-quality vegetables and fruits.',
       all: 'View all products',
+      search: 'Search varieties',
+      carouselHint: 'Drag to spin · tap to enlarge',
       cats: [
         { id: 'seasonal', t: 'Seasonal products', en: 'Seasonal' },
         { id: 'leafy', t: 'Leafy greens', en: 'Leafy greens' },

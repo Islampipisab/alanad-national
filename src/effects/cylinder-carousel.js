@@ -74,8 +74,10 @@ export function mountCylinderCarousel(root, opts = {}) {
 
   const updateHint = () => {
     if (!hint) return;
-    hint.textContent =
+    const fallback =
       locale === 'en' ? 'Drag to spin · tap to enlarge' : 'اسحب للدوران · اضغط للتكبير';
+    hint.textContent =
+      locale === 'en' ? opts.hintEn || fallback : opts.hintAr || fallback;
   };
   updateHint();
 

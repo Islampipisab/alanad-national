@@ -62,11 +62,11 @@
         />
         <span class="nav__brand-txt">
           <b data-i18n="brand.name">العناد الوطنية</b>
-          <small>AL-ANAD NATIONAL</small>
+          <small data-i18n="brand.mark">العناد</small>
         </span>
       </a>
 
-      <nav class="nav__links" id="navLinks" aria-label="Primary">
+      <nav class="nav__links" id="navLinks" data-i18n-aria="nav.aria" aria-label="القائمة الرئيسية">
         <a href="#hero" class="is-active" data-i18n="nav.home">الرئيسية</a>
         <a href="#about" data-i18n="nav.about">من نحن</a>
         <a href="#products" data-i18n="nav.products">منتجاتنا</a>
@@ -77,11 +77,11 @@
       </nav>
 
       <div class="nav__end">
-        <div class="lang" role="group" aria-label="Language">
+        <div class="lang" role="group" data-i18n-aria="lang.aria" aria-label="اللغة">
           <button type="button" class="lang__btn is-active" data-lang="ar" data-i18n="lang.ar">عربي</button>
           <button type="button" class="lang__btn" data-lang="en" data-i18n="lang.en">EN</button>
         </div>
-        <button class="burger" id="burger" type="button" aria-label="Menu" aria-expanded="false">
+        <button class="burger" id="burger" type="button" data-i18n-aria="ui.menu" aria-label="القائمة" aria-expanded="false">
           <i></i><i></i>
         </button>
       </div>
@@ -135,7 +135,7 @@
             من قلب المزارع، نصنع الفرق في كل محصول.
           </h1>
           <p class="hero__sub" data-i18n="hero.subtitle">
-            From the heart of farms, delivering freshness everywhere.
+            من قلب المزارع… نوصّل النضارة إلى كل مكان.
           </p>
           <p class="hero__lead" data-i18n="hero.lead">
             كيان تجاري متخصص بتوريد الخضار والفواكه بأعلى معايير الجودة.
@@ -189,7 +189,7 @@
               <img src="/img/trucks.jpg" alt="" class="about__shot is-on" data-about-shot />
               <img src="/img/packing.jpg" alt="" class="about__shot" data-about-shot />
               <img src="/img/coldroom.jpg" alt="" class="about__shot" data-about-shot />
-              <button class="about__play" type="button" id="aboutPlay" aria-label="Play">
+              <button class="about__play" type="button" id="aboutPlay" data-i18n-aria="ui.play" aria-label="تشغيل الفيديو">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 6.5v11l10-5.5L8 6.5z"/></svg>
               </button>
               <video
@@ -303,7 +303,7 @@
             <div>
               <p class="kicker" data-i18n="products.kicker">منتجاتنا</p>
               <h2 class="h2" data-split data-i18n="products.title">منتجاتنا</h2>
-              <p class="lead" data-i18n="products.leadEn">A diverse range of high-quality vegetables and fruits.</p>
+              <p class="lead" data-i18n="products.lead">أكثر من 75 صنفاً طازجاً بين يديك — تتنوّع بحسب الموسم.</p>
             </div>
             <button class="btn btn--outline" type="button" id="toggleCatalog" data-i18n="products.all">
               عرض جميع المنتجات
@@ -341,7 +341,7 @@
 
           <div class="catalog" id="catalog" hidden>
             <div class="catalog__toolbar">
-              <input type="search" id="productSearch" placeholder="بحث / Search" />
+              <input type="search" id="productSearch" data-i18n-placeholder="products.search" placeholder="بحث في الأصناف" />
             </div>
             <div class="catalog__grid" id="productGrid"></div>
           </div>
@@ -472,7 +472,7 @@
           <img src="/brand/al-anad-new-logo-256.png" alt="" width="44" height="44" />
           <span class="nav__brand-txt">
             <b data-i18n="brand.name">العناد الوطنية</b>
-            <small>AL-ANAD NATIONAL</small>
+            <small data-i18n="brand.mark">العناد</small>
           </span>
         </a>
         <p data-i18n="footer.tagline"></p>
