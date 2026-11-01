@@ -478,16 +478,25 @@ html[dir='rtl'] .btn__arrow {
   pointer-events: none;
 }
 
-.hero__float {
+/* Orbit slot = position + parallax; .hero__float = whole circle trampoline */
+.hero__orbit {
   position: absolute;
   z-index: 3;
   width: clamp(38px, 4vw, 56px);
   aspect-ratio: 1;
+  will-change: transform;
+}
+
+.hero__float {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   border: 1.5px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.34);
   overflow: hidden;
   will-change: transform;
+  animation: trampoline-drop 3.8s linear infinite;
+  transform-origin: center bottom;
 }
 
 .hero__float img {
@@ -496,84 +505,80 @@ html[dir='rtl'] .btn__arrow {
   object-fit: cover;
   display: block;
   border-radius: 50%;
-  will-change: transform;
-  animation: trampoline 2.55s cubic-bezier(0.22, 1.35, 0.36, 1) infinite;
 }
 
-/* Loose orbital ring (RTL: inline-start = right) around empty produce focal */
-.hero__float--1 {
-  /* ~12 o'clock */
+/* Loose orbital ring (RTL: inline-start = right) */
+.hero__orbit--1 {
   inset-block-start: 14%;
   inset-inline-start: 20%;
   width: clamp(40px, 4.2vw, 58px);
 }
 
-.hero__float--2 {
-  /* ~2 o'clock */
+.hero__orbit--2 {
   inset-block-start: 26%;
   inset-inline-start: 7%;
   width: clamp(36px, 3.8vw, 52px);
 }
 
-.hero__float--3 {
-  /* ~5 o'clock */
+.hero__orbit--3 {
   inset-block-end: 24%;
   inset-inline-start: 5%;
   width: clamp(38px, 4vw, 54px);
 }
 
-.hero__float--4 {
-  /* ~7 o'clock */
+.hero__orbit--4 {
   inset-block-end: 12%;
   inset-inline-start: 20%;
   width: clamp(34px, 3.6vw, 50px);
 }
 
-.hero__float--5 {
-  /* ~9 o'clock */
+.hero__orbit--5 {
   inset-block-end: 28%;
   inset-inline-start: 36%;
   width: clamp(37px, 3.9vw, 54px);
 }
 
-.hero__float--6 {
-  /* ~10–11 o'clock */
+.hero__orbit--6 {
   inset-block-start: 24%;
   inset-inline-start: 35%;
   width: clamp(32px, 3.4vw, 48px);
 }
 
-@keyframes trampoline {
-  0%,
+/* Entire circle: slow drop farther down → spring up → settle */
+@keyframes trampoline-drop {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  22% {
+    transform: translate3d(0, 72px, 0);
+  }
+  40% {
+    transform: translate3d(0, -38px, 0);
+  }
+  54% {
+    transform: translate3d(0, 18px, 0);
+  }
+  66% {
+    transform: translate3d(0, -12px, 0);
+  }
+  76% {
+    transform: translate3d(0, 5px, 0);
+  }
+  86%,
   100% {
-    transform: translateY(0);
-  }
-  28% {
-    transform: translateY(-16px);
-  }
-  44% {
-    transform: translateY(3px);
-  }
-  58% {
-    transform: translateY(-8px);
-  }
-  72% {
-    transform: translateY(1px);
-  }
-  84% {
-    transform: translateY(-3px);
+    transform: translate3d(0, 0, 0);
   }
 }
 
-.hero__float--1 img { animation-delay: 0s; }
-.hero__float--2 img { animation-delay: 0.28s; }
-.hero__float--3 img { animation-delay: 0.55s; }
-.hero__float--4 img { animation-delay: 0.82s; }
-.hero__float--5 img { animation-delay: 1.08s; }
-.hero__float--6 img { animation-delay: 1.32s; }
+.hero__orbit--1 .hero__float { animation-delay: 0s; }
+.hero__orbit--2 .hero__float { animation-delay: 0.32s; }
+.hero__orbit--3 .hero__float { animation-delay: 0.64s; }
+.hero__orbit--4 .hero__float { animation-delay: 0.96s; }
+.hero__orbit--5 .hero__float { animation-delay: 1.28s; }
+.hero__orbit--6 .hero__float { animation-delay: 1.6s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero__float img {
+  .hero__float {
     animation: none !important;
   }
 }
@@ -822,10 +827,37 @@ html[dir='ltr'] .hero__content {
 }
 
 .journey__track {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
   gap: 0.65rem;
   align-items: start;
+}
+
+.journey__track::before {
+  content: '';
+  position: absolute;
+  inset-inline: 4%;
+  top: calc(0.9rem + (min(100%, 220px) * 0.375));
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(181, 217, 91, 0.45),
+    rgba(181, 217, 91, 0.45),
+    transparent
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.journey__track > * {
+  position: relative;
+  z-index: 1;
+}
+
+.jstep {
+  min-width: 0;
 }
 
 .jstep__img {
@@ -1327,6 +1359,10 @@ html[dir='rtl'] .marquee__track {
     grid-template-columns: 1fr 1fr;
   }
 
+  .journey__track::before {
+    display: none;
+  }
+
   .jstep__chev {
     display: none;
   }
@@ -1344,7 +1380,7 @@ html[dir='rtl'] .marquee__track {
     grid-template-columns: repeat(3, 1fr);
   }
 
-  .hero__float {
+  .hero__orbit {
     display: none;
   }
 
@@ -1409,6 +1445,13 @@ html[dir='rtl'] .marquee__track {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+  outline: none;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+}
+
+.cyl__stage * {
+  -webkit-user-drag: none;
 }
 
 .cyl__stage.is-dragging {
@@ -1456,8 +1499,15 @@ html[dir='rtl'] .marquee__track {
   border: 0;
   background: transparent;
   transform-origin: center center;
-  cursor: pointer;
+  cursor: grab;
   color: inherit;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cyl__stage.is-dragging .cyl__face {
+  cursor: grabbing;
+  pointer-events: none;
 }
 
 .cyl__card {
@@ -1536,10 +1586,18 @@ html[dir='rtl'] .marquee__track {
   backdrop-filter: blur(10px);
   opacity: 0;
   transition: opacity 0.22s ease;
+  pointer-events: none;
+}
+
+/* [hidden] loses to .cyl__lightbox { display:grid } — force it off the hit tree */
+.cyl__lightbox[hidden] {
+  display: none !important;
+  pointer-events: none !important;
 }
 
 .cyl__lightbox.is-open {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .cyl__lightbox-figure {

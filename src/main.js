@@ -191,13 +191,14 @@ const PRODUCT_CAROUSEL_ITEMS = [
 
 let carouselApi = null;
 
-function initProductsCarousel() {
+function initProductsCarousel(lenis) {
   const root = document.querySelector('#productsCarousel');
   if (!root) return;
   carouselApi = mountCylinderCarousel(root, {
     items: PRODUCT_CAROUSEL_ITEMS,
     reduced,
     locale: langNow(),
+    lenis,
     onSelect: (index) => {
       const cat = PRODUCT_CAROUSEL_ITEMS[index];
       const catalog = document.querySelector('#catalog');
@@ -297,8 +298,8 @@ function initParallax() {
   if (reduced) return;
   const layer = document.querySelector('.hero__produce');
   if (!layer) return;
-  // Outer .hero__float nodes only — trampoline runs on inner <img>
-  const nodes = [...layer.querySelectorAll('.hero__float[data-depth]')];
+  // Orbit slots only — trampoline translates the whole .hero__float circle
+  const nodes = [...layer.querySelectorAll('.hero__orbit[data-depth]')];
 
   const onMove = (e) => {
     const x = (e.clientX / window.innerWidth - 0.5) * 2;
@@ -370,7 +371,7 @@ function initMotion(lenis) {
     )
     .from('.hero__sub, .hero__lead', { y: 24, opacity: 0, duration: 0.7, stagger: 0.1 }, 0.95)
     .from('.hero__ctas .btn', { y: 20, opacity: 0, duration: 0.55, stagger: 0.08 }, 1.15)
-    .from('.hero__float', { y: 40, opacity: 0, duration: 0.9, stagger: 0.08 }, 0.85)
+    .from('.hero__orbit', { y: 40, opacity: 0, duration: 0.9, stagger: 0.08 }, 0.85)
     .from('.hero__stats', { y: 40, opacity: 0, duration: 0.8 }, 1.25);
 
   document.querySelectorAll('[data-reveal]').forEach((el) => {
@@ -399,14 +400,22 @@ function initMotion(lenis) {
     });
   });
 
-  // Journey progress feel
-  gsap.from('.jstep', {
+  // Journey steps — stagger inside the track (track itself uses data-reveal)
+  gsap.from('#journeyTrack .jstep', {
     opacity: 0,
-    y: 36,
-    stagger: 0.12,
-    duration: 0.8,
+    y: 28,
+    stagger: 0.14,
+    duration: 0.75,
     ease: 'power3.out',
-    scrollTrigger: { trigger: '#journeyTrack', start: 'top 80%', once: true },
+    scrollTrigger: { trigger: '#journeyTrack', start: 'top 85%', once: true },
+  });
+  gsap.from('#journeyTrack .jstep__chev', {
+    opacity: 0,
+    scale: 0.6,
+    stagger: 0.14,
+    duration: 0.55,
+    ease: 'back.out(1.6)',
+    scrollTrigger: { trigger: '#journeyTrack', start: 'top 85%', once: true },
   });
 
   // Stats count-up
@@ -546,9 +555,9 @@ renderProducts();
 initUI();
 initGlassFold();
 initLogoVideo();
-initProductsCarousel();
 initAboutMedia();
 initParallax();
 initTilt();
 const lenis = initSmoothScroll();
+initProductsCarousel(lenis);
 initMotion(lenis);

@@ -7,10 +7,10 @@ import gsap from 'gsap';
 
 const CONFIG = {
   cylinderWidth: { mobile: 1600, desktop: 2400 },
-  dragSensitivity: 0.18,
-  wheelSensitivity: 0.45,
+  dragSensitivity: 0.35,
+  wheelSensitivity: 0.55,
   perspective: 900,
-  spring: { duration: 0.85, ease: 'power3.out' },
+  spring: { duration: 0.75, ease: 'power3.out' },
 };
 
 /**
@@ -20,16 +20,17 @@ const CONFIG = {
  *   reduced?: boolean,
  *   locale?: 'ar' | 'en',
  *   onSelect?: (index: number) => void,
+ *   lenis?: { stop: Function, start: Function } | null,
  * }} opts
  */
 export function mountCylinderCarousel(root, opts = {}) {
-  const { items = [], reduced = false, onSelect } = opts;
+  const { items = [], reduced = false, onSelect, lenis = null } = opts;
   let locale = opts.locale === 'en' ? 'en' : 'ar';
   if (!root || !items.length) return { destroy() {}, setLabels() {} };
 
   root.classList.add('cyl');
   root.innerHTML = `
-    <div class="cyl__stage" data-cyl-stage>
+    <div class="cyl__stage" data-cyl-stage tabindex="0" role="region" aria-roledescription="carousel">
       <p class="cyl__hint" data-cyl-hint></p>
       <div class="cyl__viewport" data-cyl-viewport>
         <div class="cyl__ring" data-cyl-ring></div>
@@ -53,11 +54,19 @@ export function mountCylinderCarousel(root, opts = {}) {
   const lightboxCap = root.querySelector('[data-cyl-lightbox-cap]');
   const closeBtn = root.querySelector('[data-cyl-close]');
 
-  const state = { rotation: 0, dragging: false, moved: false, lastX: 0, velocity: 0, lastT: 0 };
+  const state = {
+    rotation: 0,
+    dragging: false,
+    moved: false,
+    lastX: 0,
+    velocity: 0,
+    lastT: 0,
+    pointerId: null,
+    lenisPaused: false,
+  };
   const proxy = { y: 0 };
 
   const isSmall = () => window.matchMedia('(max-width: 768px)').matches;
-
   const titleOf = (item) => (locale === 'en' ? item.titleEn : item.titleAr);
 
   const updateHint = () => {
@@ -67,6 +76,34 @@ export function mountCylinderCarousel(root, opts = {}) {
   };
   updateHint();
 
+  const pauseLenis = () => {
+    if (!lenis || state.lenisPaused) return;
+    lenis.stop?.();
+    state.lenisPaused = true;
+  };
+
+  const resumeLenis = () => {
+    if (!lenis || !state.lenisPaused) return;
+    lenis.start?.();
+    state.lenisPaused = false;
+  };
+
+  function paint(immediate = true) {
+    if (immediate) {
+      gsap.killTweensOf(proxy);
+      proxy.y = state.rotation;
+      gsap.set(ring, { rotationY: state.rotation, force3D: true });
+    } else {
+      gsap.to(proxy, {
+        y: state.rotation,
+        ...CONFIG.spring,
+        onUpdate: () => {
+          gsap.set(ring, { rotationY: proxy.y, force3D: true });
+        },
+      });
+    }
+  }
+
   function layout() {
     const cylinderWidth = isSmall() ? CONFIG.cylinderWidth.mobile : CONFIG.cylinderWidth.desktop;
     const faceCount = items.length;
@@ -74,38 +111,29 @@ export function mountCylinderCarousel(root, opts = {}) {
     const radius = cylinderWidth / (2 * Math.PI);
 
     viewport.style.perspective = `${CONFIG.perspective}px`;
-    ring.style.width = `${cylinderWidth}px`;
+    gsap.set(ring, {
+      width: cylinderWidth,
+      transformStyle: 'preserve-3d',
+      transformOrigin: '50% 50%',
+      force3D: true,
+    });
+
     ring.innerHTML = items
       .map((item, i) => {
         const angle = i * (360 / faceCount);
-        return `<button type="button" class="cyl__face" data-index="${i}" style="width:${faceWidth}px;transform:rotateY(${angle}deg) translateZ(${radius}px)">
+        return `<div class="cyl__face" role="button" tabindex="0" data-index="${i}" style="width:${faceWidth}px;transform:rotateY(${angle}deg) translateZ(${radius}px)">
           <span class="cyl__card">
             <img src="${item.image}" alt="" draggable="false" loading="${i < 6 ? 'eager' : 'lazy'}" />
             <span class="cyl__label" data-label>${titleOf(item)}</span>
           </span>
-        </button>`;
+        </div>`;
       })
       .join('');
-  }
 
-  function applyRotation(immediate = false) {
-    const transform = `rotate3d(0, 1, 0, ${state.rotation}deg)`;
-    if (immediate) {
-      gsap.set(ring, { transform });
-      proxy.y = state.rotation;
-    } else {
-      gsap.to(proxy, {
-        y: state.rotation,
-        ...CONFIG.spring,
-        onUpdate: () => {
-          ring.style.transform = `rotate3d(0, 1, 0, ${proxy.y}deg)`;
-        },
-      });
-    }
+    paint(true);
   }
 
   layout();
-  applyRotation(true);
 
   if (reduced) {
     root.classList.add('cyl--reduced');
@@ -125,51 +153,73 @@ export function mountCylinderCarousel(root, opts = {}) {
 
   const onPointerDown = (e) => {
     if (e.button != null && e.button !== 0) return;
+    e.preventDefault();
     state.dragging = true;
     state.moved = false;
     state.lastX = e.clientX;
     state.velocity = 0;
     state.lastT = performance.now();
+    state.pointerId = e.pointerId;
     gsap.killTweensOf(proxy);
     proxy.y = state.rotation;
     stage.classList.add('is-dragging');
-    stage.setPointerCapture?.(e.pointerId);
+    pauseLenis();
+    try {
+      stage.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
   };
 
   const onPointerMove = (e) => {
     if (!state.dragging) return;
+    if (state.pointerId != null && e.pointerId !== state.pointerId) return;
+    e.preventDefault();
     const now = performance.now();
     const dx = e.clientX - state.lastX;
     if (Math.abs(dx) > 2) state.moved = true;
-    const dt = Math.max(16, now - state.lastT);
-    state.velocity = (dx / dt) * 16;
+    const dt = Math.max(8, now - state.lastT);
+    state.velocity = dx / dt;
     state.rotation += dx * CONFIG.dragSensitivity;
     state.lastX = e.clientX;
     state.lastT = now;
-    ring.style.transform = `rotate3d(0, 1, 0, ${state.rotation}deg)`;
     proxy.y = state.rotation;
+    gsap.set(ring, { rotationY: state.rotation, force3D: true });
   };
 
-  const onPointerUp = (e) => {
+  const endDrag = (e) => {
     if (!state.dragging) return;
+    if (e && state.pointerId != null && e.pointerId !== state.pointerId) return;
     state.dragging = false;
     stage.classList.remove('is-dragging');
     try {
-      stage.releasePointerCapture?.(e.pointerId);
+      if (state.pointerId != null) stage.releasePointerCapture(state.pointerId);
     } catch {
       /* ignore */
     }
-    const momentum = Math.abs(state.velocity) > 0.4 ? state.velocity * 12 : 0;
+    state.pointerId = null;
+    // px/ms → degrees of coast
+    const momentum = Math.abs(state.velocity) > 0.05 ? state.velocity * 180 : 0;
     state.rotation += momentum;
-    applyRotation(false);
+    paint(false);
+    // keep Lenis paused briefly so settle doesn't fight page scroll
+    window.setTimeout(resumeLenis, 120);
   };
 
   const onWheel = (e) => {
+    // Prefer horizontal trackpad delta; fall back to vertical-as-rotate
+    const raw =
+      Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    if (!raw) return;
     e.preventDefault();
-    const delta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 100);
+    e.stopPropagation();
+    pauseLenis();
     gsap.killTweensOf(proxy);
-    state.rotation = proxy.y + delta * CONFIG.wheelSensitivity;
-    applyRotation(false);
+    const clamped = Math.sign(raw) * Math.min(Math.abs(raw), 120);
+    state.rotation = proxy.y + clamped * CONFIG.wheelSensitivity;
+    paint(false);
+    window.clearTimeout(onWheel._resumeTimer);
+    onWheel._resumeTimer = window.setTimeout(resumeLenis, 220);
   };
 
   const openLightbox = (index) => {
@@ -180,6 +230,7 @@ export function mountCylinderCarousel(root, opts = {}) {
     lightbox.hidden = false;
     requestAnimationFrame(() => lightbox.classList.add('is-open'));
     document.documentElement.classList.add('cyl-lightbox-open');
+    pauseLenis();
     onSelect?.(index);
   };
 
@@ -190,29 +241,49 @@ export function mountCylinderCarousel(root, opts = {}) {
       lightbox.hidden = true;
       lightboxImg.removeAttribute('src');
     }, 220);
+    resumeLenis();
   };
 
-  const onFaceClick = (e) => {
+  const onFaceActivate = (e) => {
     const face = e.target.closest('[data-index]');
     if (!face || state.moved) return;
+    e.preventDefault();
+    openLightbox(Number(face.dataset.index));
+  };
+
+  const onFaceKey = (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const face = e.target.closest('[data-index]');
+    if (!face) return;
+    e.preventDefault();
     openLightbox(Number(face.dataset.index));
   };
 
   const onKey = (e) => {
     if (e.key === 'Escape' && !lightbox.hidden) closeLightbox();
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      const dir = e.key === 'ArrowLeft' ? 1 : -1;
+      e.preventDefault();
+      pauseLenis();
+      state.rotation += dir * (360 / Math.max(items.length, 1));
+      paint(false);
+      window.setTimeout(resumeLenis, 200);
+    }
   };
 
   const onResize = () => {
     layout();
-    applyRotation(true);
   };
 
-  stage.addEventListener('pointerdown', onPointerDown);
-  stage.addEventListener('pointermove', onPointerMove);
-  stage.addEventListener('pointerup', onPointerUp);
-  stage.addEventListener('pointercancel', onPointerUp);
+  // Document-level move/up so drag survives leaving the stage / 3D hit gaps
+  stage.addEventListener('pointerdown', onPointerDown, { passive: false });
+  window.addEventListener('pointermove', onPointerMove, { passive: false });
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
   stage.addEventListener('wheel', onWheel, { passive: false });
-  ring.addEventListener('click', onFaceClick);
+  stage.addEventListener('click', onFaceActivate);
+  stage.addEventListener('keydown', onFaceKey);
+  stage.addEventListener('keydown', onKey);
   closeBtn.addEventListener('click', closeLightbox);
   lightbox.addEventListener('click', (e) => {
     if (e.target === lightbox) closeLightbox();
@@ -234,13 +305,16 @@ export function mountCylinderCarousel(root, opts = {}) {
       }
     },
     destroy() {
+      resumeLenis();
       gsap.killTweensOf(proxy);
       stage.removeEventListener('pointerdown', onPointerDown);
-      stage.removeEventListener('pointermove', onPointerMove);
-      stage.removeEventListener('pointerup', onPointerUp);
-      stage.removeEventListener('pointercancel', onPointerUp);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', endDrag);
+      window.removeEventListener('pointercancel', endDrag);
       stage.removeEventListener('wheel', onWheel);
-      ring.removeEventListener('click', onFaceClick);
+      stage.removeEventListener('click', onFaceActivate);
+      stage.removeEventListener('keydown', onFaceKey);
+      stage.removeEventListener('keydown', onKey);
       closeBtn.removeEventListener('click', closeLightbox);
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', onResize);
