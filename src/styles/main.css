@@ -684,6 +684,8 @@ html[dir='ltr'] .hero__content {
   position: relative;
   opacity: 1;
   border-radius: 24%;
+  /* Black plate → float over green GlassFold (same trick as old site-bg watermark) */
+  mix-blend-mode: screen;
 }
 
 .hero__brand-float.is-video-fallback .hero__produce-key {
