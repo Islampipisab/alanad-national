@@ -1683,20 +1683,30 @@ html[dir='rtl'] .marquee__track {
 
 .ccig__frame {
   position: relative;
-  width: min(520px, 100%);
-  aspect-ratio: 1;
+  width: min(440px, 100%);
+  /* Match product asset ratio (520×650) — avoids letterbox + extreme square crop */
+  aspect-ratio: 4 / 5;
   margin-inline: auto;
   border-radius: 22px;
   overflow: hidden;
   border: 1px solid rgba(181, 217, 91, 0.18);
   background:
-    radial-gradient(ellipse at 50% 35%, rgba(181, 217, 91, 0.1), transparent 55%),
-    rgba(4, 22, 16, 0.55);
+    radial-gradient(ellipse at 50% 40%, rgba(181, 217, 91, 0.08), transparent 52%),
+    linear-gradient(160deg, rgba(18, 61, 43, 0.92), rgba(4, 22, 16, 0.96));
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
   touch-action: pan-y;
   user-select: none;
   cursor: grab;
   outline: none;
+}
+
+.ccig__matte {
+  fill: rgba(6, 28, 20, 0.92);
+}
+
+.ccig__layer image {
+  /* SVG images: sizing via attributes; keep crisp when scaled */
+  image-rendering: auto;
 }
 
 .ccig__frame.is-dragging {
@@ -1723,7 +1733,7 @@ html[dir='rtl'] .marquee__track {
 }
 
 .ccig__tabs {
-  z-index: 20;
+  z-index: 35;
   pointer-events: none;
 }
 
@@ -1747,7 +1757,7 @@ html[dir='rtl'] .marquee__track {
   left: 1rem;
   right: 1rem;
   bottom: 3.1rem;
-  z-index: 15;
+  z-index: 40;
   text-align: center;
   pointer-events: none;
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.55);
@@ -1780,7 +1790,7 @@ html[dir='rtl'] .marquee__track {
   }
 
   .ccig__frame {
-    width: min(420px, 100%);
+    width: min(360px, 100%);
   }
 }
 

@@ -8,10 +8,18 @@ import { MotionPathPlugin } from 'gsap/MotionPathPlugin';
 
 gsap.registerPlugin(MotionPathPlugin);
 
-const VIEW = 400;
+/** ViewBox matches product asset ratio (4:5 / 520×650). */
+const VIEW_W = 400;
+const VIEW_H = 500;
 const DOT_R = 7;
 const DOT_GAP = 12;
 const EXPAND = 700;
+const AUTO_MS = 4500;
+/** Soft inset — full produce visible without extreme zoom. */
+const IMG_PAD_X = 18;
+const IMG_PAD_Y = 22;
+const IMG_W = VIEW_W - IMG_PAD_X * 2;
+const IMG_H = VIEW_H - IMG_PAD_Y * 2;
 
 /**
  * @param {HTMLElement} root
@@ -37,6 +45,9 @@ export function mountCircularGallery(root, opts = {}) {
   let clipEls = [];
   let tabEls = [];
   let uid = Math.random().toString(36).slice(2, 8);
+  let autoTimer = null;
+  let hovering = false;
+  let autoPaused = false;
 
   root.classList.add('ccig');
   root.classList.toggle('ccig--reduced', reduced);
@@ -46,7 +57,7 @@ export function mountCircularGallery(root, opts = {}) {
       <button type="button" class="ccig__nav ccig__nav--prev" data-ccig-prev aria-label="Previous">‹</button>
       <div class="ccig__frame" data-ccig-frame tabindex="0" role="region" aria-roledescription="carousel">
         <div class="ccig__stack" data-ccig-stack></div>
-        <svg class="ccig__tabs" data-ccig-tabs viewBox="0 0 ${VIEW} ${VIEW}" aria-hidden="true"></svg>
+        <svg class="ccig__tabs" data-ccig-tabs viewBox="0 0 ${VIEW_W} ${VIEW_H}" aria-hidden="true"></svg>
         <div class="ccig__caption produce-label">
           <span class="produce-type" data-ccig-type></span>
           <h3 class="ccig__title produce-name" data-ccig-title></h3>
@@ -83,14 +94,14 @@ export function mountCircularGallery(root, opts = {}) {
 
   function dotX(i, total) {
     const span = total * (DOT_R * 2 + DOT_GAP) - DOT_GAP;
-    return VIEW / 2 - span / 2 + i * (DOT_R * 2 + DOT_GAP) + DOT_R;
+    return VIEW_W / 2 - span / 2 + i * (DOT_R * 2 + DOT_GAP) + DOT_R;
   }
-  const dotY = () => VIEW - 28;
+  const dotY = () => VIEW_H - 32;
   const posSmall = (i, total) => ({ x: dotX(i, total), y: dotY(), scale: 1 });
-  const posCenter = () => ({ x: VIEW / 2, y: VIEW / 2, scale: 7 });
-  const posEnd = () => ({ x: VIEW / 2 - DOT_R * EXPAND, y: VIEW / 2, scale: EXPAND });
-  const posStart = () => ({ x: VIEW / 2 + DOT_R * EXPAND, y: VIEW / 2, scale: EXPAND });
-  const posAbove = (i, total) => ({ x: dotX(i, total), y: VIEW / 2, scale: 1 });
+  const posCenter = () => ({ x: VIEW_W / 2, y: VIEW_H / 2, scale: 7 });
+  const posEnd = () => ({ x: VIEW_W / 2 - DOT_R * EXPAND, y: VIEW_H / 2, scale: EXPAND });
+  const posStart = () => ({ x: VIEW_W / 2 + DOT_R * EXPAND, y: VIEW_H / 2, scale: EXPAND });
+  const posAbove = (i, total) => ({ x: dotX(i, total), y: VIEW_H / 2, scale: 1 });
 
   function syncCaption() {
     const item = items[index];
@@ -103,19 +114,65 @@ export function mountCircularGallery(root, opts = {}) {
     titleEl.textContent = titleOf(item);
   }
 
+  function fitImage(img, mode) {
+    if (!img) return;
+    // Always meet (contain) — product assets are 4:5 portraits; no extreme zoom
+    img.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    if (mode === 'contain') {
+      img.setAttribute('x', String(IMG_PAD_X));
+      img.setAttribute('y', String(IMG_PAD_Y));
+      img.setAttribute('width', String(IMG_W));
+      img.setAttribute('height', String(IMG_H));
+    } else {
+      img.setAttribute('x', '10');
+      img.setAttribute('y', '12');
+      img.setAttribute('width', String(VIEW_W - 20));
+      img.setAttribute('height', String(VIEW_H - 24));
+    }
+  }
+
   function setLayerState(i, inPlace) {
     const layer = layerEls[i];
     if (!layer) return;
-    const img = layer.querySelector('image, img');
+    const img = layer.querySelector('image');
+    const matte = layer.querySelector('.ccig__matte');
     const g = layer.querySelector('[data-ccig-clipped]');
     if (inPlace) {
       g?.setAttribute('clip-path', `url(#${uid}_${i}_sq)`);
-      layer.style.zIndex = String(i + 1);
+      // Open frame must sit above inactive dots (and their mattes)
+      layer.style.zIndex = String(items.length + 20);
+      fitImage(img, 'contain');
+      layer.classList.add('is-open');
+      matte?.setAttribute('opacity', '1');
     } else {
       g?.setAttribute('clip-path', `url(#${uid}_${i}_circ)`);
-      layer.style.zIndex = String(items.length + 2);
+      layer.style.zIndex = String(i + 1);
+      fitImage(img, 'dot');
+      layer.classList.remove('is-open');
+      // No full-frame matte on dots — it was covering the open image
+      matte?.setAttribute('opacity', '0');
     }
-    if (img) img.setAttribute('href', items[i].image);
+    if (img && items[i]) {
+      img.setAttribute('href', items[i].image);
+      img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', items[i].image);
+    }
+  }
+
+  function clearAuto() {
+    if (autoTimer) {
+      clearTimeout(autoTimer);
+      autoTimer = null;
+    }
+  }
+
+  function scheduleAuto() {
+    clearAuto();
+    if (reduced || autoPaused || hovering || dragging || busy || items.length < 2) return;
+    autoTimer = window.setTimeout(() => {
+      if (reduced || autoPaused || hovering || dragging || busy || items.length < 2) return;
+      const next = (index + 1) % items.length;
+      goTo(next, true);
+    }, AUTO_MS);
   }
 
   function build() {
@@ -136,19 +193,21 @@ export function mountCircularGallery(root, opts = {}) {
       layer.className = 'ccig__layer';
       layer.dataset.index = String(i);
       layer.innerHTML = `
-        <svg viewBox="0 0 ${VIEW} ${VIEW}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
           <defs>
             <clipPath id="${uid}_${i}_circ"><circle data-ccig-clip cx="0" cy="0" r="${DOT_R}"></circle></clipPath>
-            <clipPath id="${uid}_${i}_sq"><rect width="${VIEW}" height="${VIEW}"></rect></clipPath>
+            <clipPath id="${uid}_${i}_sq"><rect width="${VIEW_W}" height="${VIEW_H}"></rect></clipPath>
           </defs>
+          <rect class="ccig__matte" width="${VIEW_W}" height="${VIEW_H}" opacity="${i === index ? 1 : 0}"></rect>
           <g data-ccig-clipped clip-path="url(#${uid}_${i}_circ)">
-            <image href="${item.image}" xlink:href="${item.image}" width="${VIEW}" height="${VIEW}" preserveAspectRatio="xMidYMid slice"></image>
+            <image href="${item.image}" xlink:href="${item.image}" x="${IMG_PAD_X}" y="${IMG_PAD_Y}" width="${IMG_W}" height="${IMG_H}" preserveAspectRatio="xMidYMid meet"></image>
           </g>
         </svg>
       `;
       stack.appendChild(layer);
       layerEls.push(layer);
       clipEls.push(layer.querySelector('[data-ccig-clip]'));
+      fitImage(layer.querySelector('image'), i === index ? 'contain' : 'dot');
 
       const tab = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       tab.setAttribute('class', 'ccig__dot');
@@ -228,8 +287,12 @@ export function mountCircularGallery(root, opts = {}) {
     if (!items.length || busy) return;
     const total = items.length;
     nextIndex = ((nextIndex % total) + total) % total;
-    if (nextIndex === index && animate) return;
+    if (nextIndex === index && animate) {
+      scheduleAuto();
+      return;
+    }
 
+    clearAuto();
     const prev = index;
     index = nextIndex;
     tabEls.forEach((t, i) => t.classList.toggle('is-active', i === index));
@@ -244,6 +307,7 @@ export function mountCircularGallery(root, opts = {}) {
         setLayerState(i, i === index);
       });
       onSelect?.(index, items[index]);
+      scheduleAuto();
       return;
     }
 
@@ -255,6 +319,7 @@ export function mountCircularGallery(root, opts = {}) {
     } finally {
       busy = false;
       root.classList.remove('is-busy');
+      scheduleAuto();
     }
   }
 
@@ -269,6 +334,7 @@ export function mountCircularGallery(root, opts = {}) {
     uid = Math.random().toString(36).slice(2, 8);
     const keep = prevId != null ? items.findIndex((it) => it.id === prevId) : 0;
     index = keep >= 0 ? keep : 0;
+    clearAuto();
     build();
     if (animate && !reduced && items.length) {
       gsap.fromTo(
@@ -277,13 +343,8 @@ export function mountCircularGallery(root, opts = {}) {
         { scale: 1, opacity: 1, duration: 0.35, stagger: 0.03, ease: 'power2.out' },
       );
     }
+    scheduleAuto();
   }
-
-  updateHint();
-  build();
-
-  prevBtn?.addEventListener('click', () => stepBy(-1));
-  nextBtn?.addEventListener('click', () => stepBy(1));
 
   // Horizontal drag on frame — vertical scroll passes through
   let dragging = false;
@@ -293,6 +354,24 @@ export function mountCircularGallery(root, opts = {}) {
   let moved = false;
   const AXIS = 8;
 
+  updateHint();
+  build();
+  scheduleAuto();
+
+  prevBtn?.addEventListener('click', () => stepBy(-1));
+  nextBtn?.addEventListener('click', () => stepBy(1));
+
+  const onHoverEnter = () => {
+    hovering = true;
+    clearAuto();
+  };
+  const onHoverLeave = () => {
+    hovering = false;
+    if (!dragging) scheduleAuto();
+  };
+  shell?.addEventListener('pointerenter', onHoverEnter);
+  shell?.addEventListener('pointerleave', onHoverLeave);
+
   const onPointerDown = (e) => {
     if (e.button != null && e.button !== 0 || busy) return;
     if (e.target.closest?.('.ccig__dot')) return;
@@ -301,6 +380,7 @@ export function mountCircularGallery(root, opts = {}) {
     moved = false;
     startX = e.clientX;
     startY = e.clientY;
+    clearAuto();
     frame.classList.add('is-dragging');
     try {
       frame.setPointerCapture?.(e.pointerId);
@@ -338,6 +418,7 @@ export function mountCircularGallery(root, opts = {}) {
       frame.classList.remove('is-dragging');
       return;
     }
+    const wasDrag = axis === 'x' && moved;
     dragging = false;
     frame.classList.remove('is-dragging');
     try {
@@ -345,9 +426,12 @@ export function mountCircularGallery(root, opts = {}) {
     } catch {
       /* ignore */
     }
-    if (axis === 'x' && moved) {
+    if (wasDrag) {
       const dx = e.clientX - startX;
       if (Math.abs(dx) > 36) stepBy(dx < 0 ? 1 : -1);
+      else scheduleAuto();
+    } else if (!hovering) {
+      scheduleAuto();
     }
     axis = null;
   };
@@ -389,7 +473,18 @@ export function mountCircularGallery(root, opts = {}) {
       updateHint();
       syncCaption();
     },
+    pauseAuto() {
+      autoPaused = true;
+      clearAuto();
+    },
+    resumeAuto() {
+      autoPaused = false;
+      scheduleAuto();
+    },
     destroy() {
+      clearAuto();
+      shell?.removeEventListener('pointerenter', onHoverEnter);
+      shell?.removeEventListener('pointerleave', onHoverLeave);
       frame.removeEventListener('pointerdown', onPointerDown);
       frame.removeEventListener('pointermove', onPointerMove);
       frame.removeEventListener('pointerup', onPointerUp);
