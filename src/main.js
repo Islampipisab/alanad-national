@@ -149,6 +149,7 @@ function initAboutMedia() {
 
   playBtn.addEventListener('click', () => {
     aboutVideo.hidden = false;
+    aboutVideo.classList.add('is-playing');
     aboutVideo.controls = true;
     aboutVideo.play().catch(() => {});
     playBtn.style.display = 'none';

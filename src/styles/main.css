@@ -656,6 +656,11 @@ html[dir='ltr'] .hero__content {
   object-fit: cover;
   background: #000;
   z-index: 3;
+  display: none;
+}
+
+.about__video.is-playing {
+  display: block;
 }
 
 .about__since {
