@@ -3,6 +3,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import { STRINGS, PARTNERS, CONTACT } from './data/i18n.js';
 import products from './data/products.json';
+import { createGlassFold } from './effects/glass-fold/createGlassFold.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -92,43 +93,64 @@ function renderProducts(filter = '') {
     .join('');
 }
 
-function initHeroVideo() {
-  const video = document.querySelector('#heroVideo');
+function initGlassFold() {
+  const canvas = document.querySelector('#glassFold');
+  if (!canvas) return null;
+  try {
+    return createGlassFold(canvas, {
+      color1: '#1F6B45',
+      color2: '#08291D',
+      color3: '#B5D95B',
+      speed: 0.42,
+      scale: 1.08,
+      noise: 0.11,
+    });
+  } catch (err) {
+    console.warn('GlassFold failed', err);
+    canvas.classList.add('is-fallback');
+    return null;
+  }
+}
+
+function initLogoVideo() {
+  const video = document.querySelector('#logoVideo');
+  const wrap = document.querySelector('.site-bg__video-wrap');
   if (!video) return;
 
-  const canAutoplay = !reduced && window.matchMedia('(min-width: 768px)').matches;
+  const canAutoplay =
+    !reduced && window.matchMedia('(min-width: 768px)').matches && !matchMedia('(pointer: coarse)').matches;
+
+  const markReady = () => {
+    video.classList.add('is-ready');
+    wrap?.classList.add('is-playing');
+  };
+
   const tryPlay = () => {
     if (!canAutoplay) return;
     video.muted = true;
     const p = video.play();
     if (p && typeof p.then === 'function') {
-      p.then(() => video.classList.add('is-ready')).catch(() => {
-        /* keep poster */
+      p.then(markReady).catch(() => {
+        /* poster stays */
       });
     }
   };
 
-  if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            if (video.preload !== 'auto') video.preload = 'auto';
-            tryPlay();
-          } else if (!video.paused) {
-            video.pause();
-          }
-        });
-      },
-      { threshold: 0.25 },
-    );
-    io.observe(video);
-  } else {
+  if (canAutoplay) {
+    video.preload = 'auto';
     tryPlay();
+  } else {
+    video.preload = 'metadata';
+    wrap?.classList.add('is-still');
   }
 
   video.addEventListener('loadeddata', () => {
-    if (!video.paused) video.classList.add('is-ready');
+    if (!video.paused) markReady();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && !video.paused) video.pause();
+    else if (!document.hidden && canAutoplay && video.paused) tryPlay();
   });
 }
 
@@ -232,7 +254,7 @@ function initMotion(lenis) {
   tl.to('.preloader__bar i', { width: '100%', duration: 0.7, ease: 'power2.inOut' }, 0)
     .to('.preloader', { opacity: 0, duration: 0.5, pointerEvents: 'none' }, '+=0.15')
     .set('.preloader', { visibility: 'hidden' })
-    .from('.hero__media', { scale: 1.18, duration: 1.6 }, 0.2)
+    .from('.site-bg__video-wrap', { opacity: 0, scale: 1.08, duration: 1.4 }, 0.15)
     .from('.hero__badge', { y: 24, opacity: 0, duration: 0.6 }, 0.55)
     .from(
       '.hero__title .split-w > span',
@@ -415,7 +437,8 @@ applyI18n(lang);
 renderPartners();
 renderProducts();
 initUI();
-initHeroVideo();
+initGlassFold();
+initLogoVideo();
 initAboutMedia();
 initParallax();
 initTilt();

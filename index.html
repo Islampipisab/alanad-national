@@ -20,6 +20,26 @@
     <link rel="stylesheet" href="/src/styles/main.css" />
   </head>
   <body>
+    <!-- Site-wide GlassFold (WebGL) + logo video layers -->
+    <div class="site-bg" aria-hidden="true">
+      <canvas class="site-bg__fold" id="glassFold"></canvas>
+      <div class="site-bg__video-wrap">
+        <video
+          class="site-bg__video"
+          id="logoVideo"
+          poster="/media/hero-poster.jpg"
+          muted
+          playsinline
+          loop
+          preload="metadata"
+        >
+          <source src="/media/gemini_generated_video_7b20eecd.mp4" type="video/mp4" />
+        </video>
+        <img class="site-bg__poster" src="/media/hero-poster.jpg" alt="" />
+      </div>
+      <div class="site-bg__veil"></div>
+    </div>
+
     <div class="preloader" id="preloader" aria-hidden="true">
       <img
         src="/brand/al-anad-new-logo-256.png"
@@ -70,24 +90,6 @@
     <main>
       <!-- HERO -->
       <section class="hero" id="hero">
-        <div class="hero__media" aria-hidden="true">
-          <img class="hero__farm" src="/img/trucks.jpg" alt="" />
-          <video
-            class="hero__video"
-            id="heroVideo"
-            poster="/media/hero-poster.jpg"
-            muted
-            playsinline
-            loop
-            preload="metadata"
-          >
-            <source src="/media/gemini_generated_video_7b20eecd.mp4" type="video/mp4" />
-          </video>
-          <img class="hero__poster" src="/media/hero-poster.jpg" alt="" />
-          <div class="hero__veil"></div>
-          <div class="hero__grain"></div>
-        </div>
-
         <div class="hero__produce" aria-hidden="true">
           <img
             class="hero__crate"
