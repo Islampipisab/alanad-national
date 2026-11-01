@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08291d">
+  <title>Al-Anad | Fresh Products</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="produce-section" id="products">
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="leaf leaf-left" aria-hidden="true">✦</div>
+    <div class="leaf leaf-right" aria-hidden="true">✦</div>
+
+    <header class="section-heading">
+      <span class="eyebrow"><i></i> AL-ANAD NATIONAL · SINCE 2007 <i></i></span>
+      <h1 data-ar="منتجاتنا الطازجة" data-en="Our Fresh Products">منتجاتنا الطازجة</h1>
+      <p data-ar="مجموعة متنوعة من الخضار والفواكه بأعلى معايير الجودة" data-en="A carefully selected range of fresh produce, sourced to high quality standards">مجموعة متنوعة من الخضار والفواكه بأعلى معايير الجودة</p>
+      <span class="heading-en">FRESHNESS IN EVERY HARVEST</span>
+    </header>
+
+    <div class="slider-shell">
+      <button class="nav-arrow nav-prev" type="button" aria-label="Previous product category">
+        <span>‹</span>
+      </button>
+
+      <div class="slider-stage" aria-live="polite">
+        <article class="slide side-slide" data-index="0">
+          <div class="slide-photo"></div>
+          <div class="side-shade"></div>
+          <div class="side-copy">
+            <span class="category-icon">♧</span>
+            <h2 data-ar="الخضروات الورقية" data-en="Leafy Greens">الخضروات الورقية</h2>
+            <span class="side-en">LEAFY GREENS</span>
+          </div>
+        </article>
+
+        <article class="slide active-slide" data-index="1">
+          <div class="photo-wrap">
+            <div class="slide-photo"></div>
+            <span class="photo-tag" data-ar="مختارة بعناية" data-en="CAREFULLY SELECTED">مختارة بعناية</span>
+            <span class="photo-orbit orbit-a"></span>
+            <span class="photo-orbit orbit-b"></span>
+          </div>
+          <div class="active-copy">
+            <span class="category-icon">✿</span>
+            <span class="copy-kicker" data-ar="من أجود المزارع" data-en="FROM TRUSTED FARMS">من أجود المزارع</span>
+            <h2 data-ar="الفواكه" data-en="Fruits">الفواكه</h2>
+            <p data-ar="تشكيلة غنية من الفواكه الطازجة، المحلية والمستوردة، لتصل إليكم بجودة تستحقونها." data-en="A vibrant selection of fresh local and imported fruits, delivered with the quality you expect.">تشكيلة غنية من الفواكه الطازجة، المحلية والمستوردة، لتصل إليكم بجودة تستحقونها.</p>
+            <a class="product-cta" href="#contact">
+              <span data-ar="استعرض المنتجات" data-en="Explore products">استعرض المنتجات</span>
+              <b>↗</b>
+            </a>
+            <span class="slide-count"><strong>02</strong> / 05</span>
+          </div>
+        </article>
+
+        <article class="slide side-slide" data-index="2">
+          <div class="slide-photo"></div>
+          <div class="side-shade"></div>
+          <div class="side-copy">
+            <span class="category-icon">♧</span>
+            <h2 data-ar="الخضروات" data-en="Vegetables">الخضروات</h2>
+            <span class="side-en">FRESH VEGETABLES</span>
+          </div>
+        </article>
+      </div>
+
+      <button class="nav-arrow nav-next" type="button" aria-label="Next product category">
+        <span>›</span>
+      </button>
+    </div>
+
+    <div class="slider-controls">
+      <div class="pagination" aria-label="Choose slide">
+        <button data-go="0" aria-label="Leafy greens"></button>
+        <button data-go="1" class="is-active" aria-label="Fruits"></button>
+        <button data-go="2" aria-label="Vegetables"></button>
+        <button data-go="3" aria-label="Essential crops"></button>
+        <button data-go="4" aria-label="Seasonal products"></button>
+      </div>
+      <div class="progress-track"><span class="progress-bar"></span></div>
+      <button class="autoplay-toggle" type="button" aria-label="Pause autoplay"><span>Ⅱ</span></button>
+    </div>
+
+    <nav class="category-nav" aria-label="Product categories">
+      <button data-go="4"><span class="tab-icon">◷</span><span><b data-ar="منتجات موسمية" data-en="Seasonal">منتجات موسمية</b><small>SEASONAL</small></span></button>
+      <button data-go="3"><span class="tab-icon">▱</span><span><b data-ar="المحاصيل الأساسية" data-en="Essential Crops">المحاصيل الأساسية</b><small>ESSENTIAL CROPS</small></span></button>
+      <button data-go="0"><span class="tab-icon">♧</span><span><b data-ar="الخضروات الورقية" data-en="Leafy Greens">الخضروات الورقية</b><small>LEAFY GREENS</small></span></button>
+      <button data-go="2"><span class="tab-icon">♢</span><span><b data-ar="الخضروات" data-en="Vegetables">الخضروات</b><small>VEGETABLES</small></span></button>
+      <button data-go="1" class="is-active"><span class="tab-icon">✿</span><span><b data-ar="الفواكه" data-en="Fruits">الفواكه</b><small>FRUITS</small></span></button>
+    </nav>
+
+    <div class="language-control">
+      <button type="button" class="lang-btn is-active" data-lang="ar">عربي</button>
+      <button type="button" class="lang-btn" data-lang="en">EN</button>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

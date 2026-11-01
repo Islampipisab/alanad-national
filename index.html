@@ -291,52 +291,167 @@
         </div>
       </section>
 
-      <!-- PRODUCTS -->
-      <section class="products section" id="products">
-        <div class="wrap">
-          <header class="section__head" data-reveal>
-            <p class="kicker" data-i18n="products.kicker">منتجاتنا</p>
-            <h2 class="h2" data-split data-i18n="products.title">منتجاتنا</h2>
-            <p class="lead" data-i18n="products.lead">أكثر من 75 صنفاً طازجاً بين يديك — تتنوّع بحسب الموسم.</p>
+      <!-- PRODUCTS — glass category slider (al_anad_animated_product_slider + glass mockup) -->
+      <section class="products" id="products">
+        <div class="produce-section" id="produceSlider" data-reveal>
+          <div class="ambient ambient-one" aria-hidden="true"></div>
+          <div class="ambient ambient-two" aria-hidden="true"></div>
+          <div class="leaf leaf-left" aria-hidden="true">✦</div>
+          <div class="leaf leaf-right" aria-hidden="true">✦</div>
+
+          <header class="section-heading">
+            <span class="eyebrow"><i></i> AL-ANAD NATIONAL · SINCE 2007 <i></i></span>
+            <h2>
+              <svg class="title-leaf" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M12 3c4.5 2.2 7 6.2 7 11.2 0 1.4-.2 2.7-.6 3.9-2.4-1.3-4.3-3.4-5.4-6.1C12.2 14.8 10 17.2 7 19c-.3-1.1-.5-2.3-.5-3.6C6.5 9.5 9 5.4 12 3z"
+                />
+              </svg>
+              <span
+                data-ar="منتجاتنا"
+                data-en="Our Fresh Products"
+                class="produce-title-text"
+                >منتجاتنا</span
+              >
+              <svg class="title-leaf title-leaf--flip" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M12 3c4.5 2.2 7 6.2 7 11.2 0 1.4-.2 2.7-.6 3.9-2.4-1.3-4.3-3.4-5.4-6.1C12.2 14.8 10 17.2 7 19c-.3-1.1-.5-2.3-.5-3.6C6.5 9.5 9 5.4 12 3z"
+                />
+              </svg>
+            </h2>
+            <p
+              class="lead-ar"
+              data-ar="أكثر من 75 صنفاً طازجاً بين يديك — تتنوّع بحسب الموسم."
+              data-en="More than 75 fresh varieties — available by season."
+            >
+              أكثر من 75 صنفاً طازجاً بين يديك — تتنوّع بحسب الموسم.
+            </p>
+            <span class="heading-en">Our Fresh Products</span>
           </header>
 
-          <div class="products__search" data-reveal>
-            <label class="search-pill" for="productSearch">
-              <span class="visually-hidden" data-i18n="products.search">بحث في الأصناف</span>
-              <input
-                type="search"
-                id="productSearch"
-                data-i18n-placeholder="products.search"
-                placeholder="بحث في الأصناف"
-                autocomplete="off"
-              />
-            </label>
+          <div class="slider-shell">
+            <button class="nav-arrow nav-prev" type="button" aria-label="Previous">
+              <span>‹</span>
+            </button>
+
+            <div class="slider-stage" aria-live="polite">
+              <article class="slide side-slide" data-slot="0" data-index="0">
+                <div class="slide-photo"></div>
+                <div class="side-shade"></div>
+                <div class="side-copy">
+                  <span class="category-icon">♧</span>
+                  <h3>الخضروات الورقية</h3>
+                  <span class="side-en">LEAFY GREENS</span>
+                </div>
+              </article>
+
+              <article class="slide active-slide" data-index="1">
+                <div class="photo-wrap">
+                  <div class="slide-photo"></div>
+                  <span
+                    class="photo-tag"
+                    data-ar="مختارة بعناية"
+                    data-en="CAREFULLY SELECTED"
+                    >مختارة بعناية</span
+                  >
+                  <span class="photo-orbit orbit-a"></span>
+                  <span class="photo-orbit orbit-b"></span>
+                </div>
+                <div class="active-copy">
+                  <span class="category-icon">✿</span>
+                  <span
+                    class="copy-kicker"
+                    data-ar="من أجود المزارع"
+                    data-en="FROM TRUSTED FARMS"
+                    >من أجود المزارع</span
+                  >
+                  <h3>الفواكه</h3>
+                  <span class="active-en">Fruits</span>
+                  <p>
+                    تشكيلة غنية من الفواكه الطازجة، المحلية والمستوردة، لتصل إليكم بجودة
+                    تستحقونها.
+                  </p>
+                  <a class="product-cta" href="#contact">
+                    <span data-ar="استعرض المنتجات" data-en="Explore products"
+                      >استعرض المنتجات</span
+                    >
+                    <b>↗</b>
+                  </a>
+                  <span class="slide-count"><strong>02</strong> / 05</span>
+                </div>
+              </article>
+
+              <article class="slide side-slide" data-slot="2" data-index="2">
+                <div class="slide-photo"></div>
+                <div class="side-shade"></div>
+                <div class="side-copy">
+                  <span class="category-icon">♢</span>
+                  <h3>الخضروات</h3>
+                  <span class="side-en">FRESH VEGETABLES</span>
+                </div>
+              </article>
+            </div>
+
+            <button class="nav-arrow nav-next" type="button" aria-label="Next">
+              <span>›</span>
+            </button>
           </div>
 
-          <div class="filter-pills" id="productFilters" role="tablist" data-reveal data-i18n-aria="products.filtersAria" aria-label="تصفية المنتجات">
-            <button type="button" class="filter-pill is-active" role="tab" aria-selected="true" data-filter="all">
-              <span class="filter-pill__label" data-i18n="products.filters.all">الكل</span>
-              <span class="filter-pill__count" data-filter-count="all">75</span>
-            </button>
-            <button type="button" class="filter-pill" role="tab" aria-selected="false" data-filter="veg">
-              <span class="filter-pill__label" data-i18n="products.filters.veg">خضروات</span>
-              <span class="filter-pill__count" data-filter-count="veg">32</span>
-            </button>
-            <button type="button" class="filter-pill" role="tab" aria-selected="false" data-filter="leaf">
-              <span class="filter-pill__label" data-i18n="products.filters.leaf">ورقيات وأعشاب</span>
-              <span class="filter-pill__count" data-filter-count="leaf">12</span>
-            </button>
-            <button type="button" class="filter-pill" role="tab" aria-selected="false" data-filter="fruit">
-              <span class="filter-pill__label" data-i18n="products.filters.fruit">فواكه</span>
-              <span class="filter-pill__count" data-filter-count="fruit">31</span>
+          <div class="slider-controls">
+            <div class="pagination" aria-label="Choose category">
+              <button type="button" data-go="0" aria-label="Leafy greens"></button>
+              <button type="button" data-go="1" class="is-active" aria-label="Fruits"></button>
+              <button type="button" data-go="2" aria-label="Vegetables"></button>
+              <button type="button" data-go="3" aria-label="Essential crops"></button>
+              <button type="button" data-go="4" aria-label="Seasonal products"></button>
+            </div>
+            <div class="progress-track"><span class="progress-bar"></span></div>
+            <button class="autoplay-toggle" type="button" aria-label="Pause autoplay">
+              <span>Ⅱ</span>
             </button>
           </div>
 
-          <div class="ig-wrap" data-reveal>
-            <div id="productsGallery" class="ig" data-i18n-aria="nav.products" aria-label="منتجاتنا"></div>
-          </div>
-
-          <p class="products__note" data-i18n="products.note" data-reveal></p>
+          <nav class="category-nav" aria-label="Product categories">
+            <!-- LTR visual order matches glass mockup: Seasonal … Fruits(active) -->
+            <button type="button" data-go="4">
+              <span class="tab-icon">◷</span
+              ><span
+                ><b data-ar="منتجات موسمية" data-en="Seasonal">منتجات موسمية</b
+                ><small>SEASONAL</small></span
+              >
+            </button>
+            <button type="button" data-go="3">
+              <span class="tab-icon">▱</span
+              ><span
+                ><b data-ar="المحاصيل الأساسية" data-en="Essential Crops"
+                  >المحاصيل الأساسية</b
+                ><small>ESSENTIAL CROPS</small></span
+              >
+            </button>
+            <button type="button" data-go="0">
+              <span class="tab-icon">♧</span
+              ><span
+                ><b data-ar="الخضروات الورقية" data-en="Leafy Greens">الخضروات الورقية</b
+                ><small>LEAFY GREENS</small></span
+              >
+            </button>
+            <button type="button" data-go="2">
+              <span class="tab-icon">♢</span
+              ><span
+                ><b data-ar="الخضروات" data-en="Vegetables">الخضروات</b
+                ><small>VEGETABLES</small></span
+              >
+            </button>
+            <button type="button" data-go="1" class="is-active">
+              <span class="tab-icon">✿</span
+              ><span
+                ><b data-ar="الفواكه" data-en="Fruits">الفواكه</b
+                ><small>FRUITS</small></span
+              >
+            </button>
+          </nav>
         </div>
       </section>
 

@@ -2,10 +2,10 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import { STRINGS, PARTNERS, CONTACT } from './data/i18n.js';
-import products from './data/products.json';
 import { createGlassFold } from './effects/glass-fold/createGlassFold.js';
-import { mountCircularGallery } from './effects/circular-gallery.js';
 import { mountLiquidNavbar } from './effects/liquid-navbar.js';
+import { mountProduceSlider } from './effects/produce-slider/mount.js';
+import './effects/produce-slider/styles.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -18,6 +18,8 @@ let liquidNav = null;
 let glassFoldApi = null;
 /** @type {{ pause: Function, resume: Function, destroy: Function } | null} */
 let heroProduceApi = null;
+/** @type {{ setLocale: Function, destroy: Function } | null} */
+let produceSliderApi = null;
 
 const saved = localStorage.getItem('lang');
 const lang = saved === 'en' || saved === 'ar' ? saved : 'ar';
@@ -68,7 +70,7 @@ function applyI18n(locale) {
 
   localStorage.setItem('lang', locale);
   renderProducts();
-  galleryApi?.setLabels?.(locale);
+  produceSliderApi?.setLocale?.(locale);
 }
 
 function splitHeadings() {
@@ -94,21 +96,10 @@ function renderPartners() {
   track.innerHTML = cards + cards;
 }
 
-function productLabel(item) {
-  return langNow() === 'ar' ? item.ar : item.en;
-}
-
 function langNow() {
   return document.documentElement.lang === 'en' ? 'en' : 'ar';
 }
 
-function produceType(cat, locale = langNow()) {
-  const fruit = cat === 'fruit';
-  if (locale === 'en') return fruit ? STRINGS.en.products.typeFruit : STRINGS.en.products.typeVeg;
-  return fruit ? STRINGS.ar.products.typeFruit : STRINGS.ar.products.typeVeg;
-}
-
-/** Catalog grid removed — keep stub so i18n/lang refresh stays safe. */
 function renderProducts() {}
 
 function initGlassFold() {
@@ -133,82 +124,13 @@ function initGlassFold() {
   }
 }
 
-function toGalleryItem(p) {
-  const fruit = p.cat === 'fruit';
-  return {
-    id: p.slug,
-    image: `/img/gallery/${p.slug}.jpg`,
-    titleAr: p.ar,
-    titleEn: p.en,
-    cat: p.cat,
-    typeAr: fruit ? STRINGS.ar.products.typeFruit : STRINGS.ar.products.typeVeg,
-    typeEn: fruit ? STRINGS.en.products.typeFruit : STRINGS.en.products.typeVeg,
-  };
-}
-
-const PRODUCT_GALLERY_ITEMS = products.map(toGalleryItem);
-const FILTER_COUNTS = {
-  all: products.length,
-  veg: products.filter((p) => p.cat === 'veg').length,
-  leaf: products.filter((p) => p.cat === 'leaf').length,
-  fruit: products.filter((p) => p.cat === 'fruit').length,
-};
-
-let galleryApi = null;
-let activeGalleryFilter = 'all';
-
-/** Cap dots in the clip gallery so the square frame stays readable. */
-const GALLERY_CAP = 12;
-
-function galleryItemsFor(filter = 'all', query = '') {
-  const q = query.trim().toLowerCase();
-  const list = PRODUCT_GALLERY_ITEMS.filter((item) => {
-    if (filter !== 'all' && item.cat !== filter) return false;
-    if (!q) return true;
-    const type = `${item.typeAr} ${item.typeEn}`;
-    return `${item.titleAr} ${item.titleEn} ${item.id} ${type}`.toLowerCase().includes(q);
-  });
-  return list.slice(0, GALLERY_CAP);
-}
-
-function syncFilterCounts() {
-  Object.entries(FILTER_COUNTS).forEach(([key, count]) => {
-    document.querySelectorAll(`[data-filter-count="${key}"]`).forEach((el) => {
-      el.textContent = String(count);
-    });
-  });
-}
-
-function setGalleryFilter(filter, { fromSearch = false } = {}) {
-  activeGalleryFilter = filter || 'all';
-  document.querySelectorAll('#productFilters .filter-pill').forEach((btn) => {
-    const on = btn.dataset.filter === activeGalleryFilter;
-    btn.classList.toggle('is-active', on);
-    btn.setAttribute('aria-selected', String(on));
-  });
-  const q = document.querySelector('#productSearch')?.value || '';
-  const next = galleryItemsFor(activeGalleryFilter, q);
-  galleryApi?.setItems?.(next, { animate: !fromSearch });
-}
-
 function initProductsGallery() {
-  const root = document.querySelector('#productsGallery');
+  const root = document.querySelector('#produceSlider');
   if (!root) return;
-  syncFilterCounts();
-  galleryApi = mountCircularGallery(root, {
-    items: galleryItemsFor('all'),
+  produceSliderApi?.destroy?.();
+  produceSliderApi = mountProduceSlider(root, {
     reduced,
     locale: langNow(),
-    hintAr: STRINGS.ar.products.carouselHint,
-    hintEn: STRINGS.en.products.carouselHint,
-  });
-
-  document.querySelectorAll('#productFilters .filter-pill').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const filter = btn.dataset.filter || 'all';
-      if (filter === activeGalleryFilter) return;
-      setGalleryFilter(filter);
-    });
   });
 }
 
@@ -564,11 +486,6 @@ function initUI() {
     const open = navLinks.classList.toggle('is-open');
     burger.setAttribute('aria-expanded', String(open));
     if (open) requestAnimationFrame(() => liquidNav?.refresh?.());
-  });
-
-  document.querySelector('#productSearch')?.addEventListener('input', (e) => {
-    const q = e.target.value;
-    galleryApi?.setItems?.(galleryItemsFor(activeGalleryFilter, q), { animate: false });
   });
 
   document.querySelector('#contactForm')?.addEventListener('submit', (e) => {
