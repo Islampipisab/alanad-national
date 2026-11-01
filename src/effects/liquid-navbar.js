@@ -1,7 +1,7 @@
 /**
  * Vanilla Vite port of Nimbus-style Liquid Glass Navbar.
  * Dark glass shell + gooey active blob that morphs toward a tomato
- * silhouette on click (with ripple), then settles under the active item.
+ * silhouette on click (with ripple), hover preview, keyboard-friendly.
  */
 import gsap from 'gsap';
 
@@ -27,7 +27,6 @@ export function mountLiquidNavbar(root, opts = {}) {
     return { destroy() {}, setActive() {}, refresh() {} };
   }
 
-  // Ripple ring for obvious click feedback
   let ripple = root.querySelector('[data-liquid-ripple]');
   if (!ripple) {
     ripple = document.createElement('span');
@@ -35,6 +34,15 @@ export function mountLiquidNavbar(root, opts = {}) {
     ripple.setAttribute('data-liquid-ripple', '');
     ripple.setAttribute('aria-hidden', 'true');
     glass.insertBefore(ripple, blob.nextSibling);
+  }
+
+  let hover = root.querySelector('[data-liquid-hover]');
+  if (!hover) {
+    hover = document.createElement('span');
+    hover.className = 'liquid-nav__hover';
+    hover.setAttribute('data-liquid-hover', '');
+    hover.setAttribute('aria-hidden', 'true');
+    glass.insertBefore(hover, blob);
   }
 
   root.classList.add('liquid-nav');
@@ -46,7 +54,10 @@ export function mountLiquidNavbar(root, opts = {}) {
     links[0].getAttribute('href');
   let morphTween = null;
   let moveTween = null;
+  let hoverTween = null;
   let ignoreIOUntil = 0;
+  let hovering = false;
+  let morphing = false;
 
   const linkByHref = (href) => links.find((l) => l.getAttribute('href') === href);
 
@@ -66,17 +77,61 @@ export function mountLiquidNavbar(root, opts = {}) {
     gsap.set(ripple, {
       x: target.x + target.w / 2,
       y: target.y + target.h / 2,
-      width: Math.max(target.w * 0.55, 28),
-      height: Math.max(target.h * 0.9, 28),
-      opacity: 0.9,
-      scale: 0.55,
+      width: Math.max(target.w * 0.5, 26),
+      height: Math.max(target.h * 0.85, 26),
+      opacity: 1,
+      scale: 0.4,
       borderRadius: '999px',
     });
-    gsap.to(ripple, {
-      scale: 2.35,
+    gsap
+      .timeline()
+      .to(ripple, {
+        scale: 1.15,
+        opacity: 0.95,
+        duration: 0.16,
+        ease: 'power2.out',
+      })
+      .to(ripple, {
+        scale: 2.6,
+        opacity: 0,
+        duration: 0.55,
+        ease: 'power2.out',
+      });
+  }
+
+  function showHover(link) {
+    if (!link || reduced || morphing) return;
+    hovering = true;
+    const m = measure(link);
+    const padX = 4;
+    const padY = 3;
+    const target = {
+      x: m.x - padX,
+      y: m.y - padY,
+      w: m.w + padX * 2,
+      h: m.h + padY * 2,
+    };
+    hover.classList.add('is-on');
+    gsap.killTweensOf(hover);
+    hoverTween = gsap.to(hover, {
+      x: target.x,
+      y: target.y,
+      width: target.w,
+      height: target.h,
+      opacity: 1,
+      duration: 0.32,
+      ease: 'power3.out',
+    });
+  }
+
+  function hideHover() {
+    hovering = false;
+    gsap.killTweensOf(hover);
+    hoverTween = gsap.to(hover, {
       opacity: 0,
-      duration: 0.7,
-      ease: 'power2.out',
+      duration: 0.22,
+      ease: 'power2.in',
+      onComplete: () => hover.classList.remove('is-on'),
     });
   }
 
@@ -96,6 +151,7 @@ export function mountLiquidNavbar(root, opts = {}) {
     if (morphTween) morphTween.kill();
 
     if (reduced || immediate) {
+      morphing = false;
       gsap.set(blob, {
         x: target.x,
         y: target.y,
@@ -111,41 +167,45 @@ export function mountLiquidNavbar(root, opts = {}) {
     }
 
     if (morphTomato) {
-      ignoreIOUntil = performance.now() + 1400;
+      morphing = true;
+      hideHover();
+      ignoreIOUntil = performance.now() + 1600;
       blob.classList.add('is-tomato', 'is-morphing');
       placeRipple(target);
+      root.classList.add('is-clicking');
 
-      // Stretch → obvious tomato fruit → hold → elastic settle as glass pill
       morphTween = gsap.timeline({
         defaults: { ease: 'power3.out' },
         onComplete: () => {
+          morphing = false;
           blob.classList.remove('is-tomato', 'is-morphing');
           blob.classList.add('is-settled');
+          root.classList.remove('is-clicking');
         },
       });
       morphTween
         .set(blob, { x: target.x, y: target.y, width: target.w, height: target.h })
         .to(blob, {
-          x: target.x + target.w * 0.12,
-          y: target.y - 14,
-          width: Math.max(target.w * 0.62, 40),
-          height: Math.max(target.h * 1.65, 48),
+          x: target.x + target.w * 0.1,
+          y: target.y - 16,
+          width: Math.max(target.w * 0.58, 42),
+          height: Math.max(target.h * 1.72, 52),
           borderRadius: '50% 50% 46% 46% / 62% 62% 38% 38%',
-          scaleX: 1.12,
-          scaleY: 1.22,
-          duration: 0.32,
-          ease: 'back.out(1.6)',
+          scaleX: 1.14,
+          scaleY: 1.26,
+          duration: 0.28,
+          ease: 'back.out(1.8)',
         })
         .to(blob, {
-          x: target.x + target.w * 0.16,
-          y: target.y - 18,
-          width: Math.max(target.w * 0.58, 38),
-          height: Math.max(target.h * 1.78, 52),
+          x: target.x + target.w * 0.14,
+          y: target.y - 22,
+          width: Math.max(target.w * 0.54, 40),
+          height: Math.max(target.h * 1.9, 56),
           borderRadius: '52% 48% 48% 52% / 64% 64% 36% 36%',
-          duration: 0.28,
+          duration: 0.26,
           ease: 'power2.inOut',
         })
-        .to({}, { duration: 0.18 }) // hold tomato so the click reads
+        .to({}, { duration: 0.22 })
         .to(blob, {
           x: target.x,
           y: target.y,
@@ -154,10 +214,11 @@ export function mountLiquidNavbar(root, opts = {}) {
           borderRadius: '999px',
           scaleX: 1,
           scaleY: 1,
-          duration: 0.55,
-          ease: 'elastic.out(1, 0.48)',
+          duration: 0.58,
+          ease: 'elastic.out(1, 0.45)',
         });
     } else {
+      morphing = false;
       blob.classList.remove('is-tomato', 'is-morphing');
       moveTween = gsap.to(blob, {
         x: target.x,
@@ -167,7 +228,7 @@ export function mountLiquidNavbar(root, opts = {}) {
         borderRadius: '999px',
         scaleX: 1,
         scaleY: 1,
-        duration: 0.55,
+        duration: 0.5,
         ease: 'power3.out',
       });
     }
@@ -181,7 +242,8 @@ export function mountLiquidNavbar(root, opts = {}) {
     links.forEach((l) => {
       const on = l === link;
       l.classList.toggle('is-active', on);
-      l.setAttribute('aria-current', on ? 'page' : 'false');
+      if (on) l.setAttribute('aria-current', 'page');
+      else l.removeAttribute('aria-current');
     });
     placeBlob(link, { morphTomato: morph && !reduced });
     if (scroll) opts.onNavigate?.(href);
@@ -190,6 +252,7 @@ export function mountLiquidNavbar(root, opts = {}) {
   requestAnimationFrame(() => {
     const link = linkByHref(activeHref) || links[0];
     placeBlob(link, { immediate: true });
+    gsap.set(hover, { opacity: 0, width: 0, height: 0 });
   });
 
   const onClick = (e) => {
@@ -201,11 +264,42 @@ export function mountLiquidNavbar(root, opts = {}) {
     setActive(href, { morph: true, scroll: true });
   };
 
+  const onPointerEnter = (e) => {
+    const link = e.target.closest?.('[data-liquid-link]');
+    if (!link || !glass.contains(link)) return;
+    showHover(link);
+  };
+
+  const onPointerLeave = (e) => {
+    if (!glass.contains(e.relatedTarget)) hideHover();
+  };
+
+  const onFocusIn = (e) => {
+    const link = e.target.closest?.('[data-liquid-link]');
+    if (link) showHover(link);
+  };
+
+  const onFocusOut = (e) => {
+    if (!glass.contains(e.relatedTarget)) hideHover();
+  };
+
   glass.addEventListener('click', onClick);
+  glass.addEventListener('pointerover', onPointerEnter);
+  glass.addEventListener('pointerleave', onPointerLeave);
+  glass.addEventListener('focusin', onFocusIn);
+  glass.addEventListener('focusout', onFocusOut);
 
   const onResize = () => {
     const link = linkByHref(activeHref);
     if (link) placeBlob(link, { immediate: true });
+    if (hovering) {
+      const focused = document.activeElement;
+      const hoverLink =
+        (focused?.closest?.('[data-liquid-link]') && glass.contains(focused)
+          ? focused.closest('[data-liquid-link]')
+          : null) || linkByHref(activeHref);
+      if (hoverLink) showHover(hoverLink);
+    }
   };
   window.addEventListener('resize', onResize);
 
@@ -236,12 +330,18 @@ export function mountLiquidNavbar(root, opts = {}) {
     refresh: onResize,
     destroy() {
       glass.removeEventListener('click', onClick);
+      glass.removeEventListener('pointerover', onPointerEnter);
+      glass.removeEventListener('pointerleave', onPointerLeave);
+      glass.removeEventListener('focusin', onFocusIn);
+      glass.removeEventListener('focusout', onFocusOut);
       window.removeEventListener('resize', onResize);
       io.disconnect();
       gsap.killTweensOf(blob);
       gsap.killTweensOf(ripple);
+      gsap.killTweensOf(hover);
       morphTween?.kill();
       moveTween?.kill();
+      hoverTween?.kill();
     },
   };
 }

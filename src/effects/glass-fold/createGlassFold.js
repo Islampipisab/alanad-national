@@ -1,6 +1,7 @@
 /**
  * Vanilla WebGL port of GradFlow "fold" (GlassFold) — folded translucent panes.
  * Shader source extracted from `gradflow` (MIT). No React.
+ * Perf: capped DPR, FPS budget, pause when hidden / scrolling / offscreen.
  */
 import vertSrc from './vertex.glsl?raw';
 import fragSrc from './fragment.glsl?raw';
@@ -37,14 +38,18 @@ function compile(gl, type, source) {
  * @param {object} [opts]
  */
 export function createGlassFold(canvas, opts = {}) {
+  const isCoarse = matchMedia('(pointer: coarse)').matches;
   const config = {
     color1: '#1F6B45',
     color2: '#08291D',
     color3: '#B5D95B',
-    speed: 0.42,
+    speed: 0.36,
     scale: 1.05,
     noise: 0.12,
-    dprMax: 1.75,
+    /** Cap DPR hard — full-bleed shader is expensive */
+    dprMax: isCoarse ? 1 : 1.25,
+    fpsIdle: 28,
+    fpsScroll: 12,
     ...opts,
   };
 
@@ -60,7 +65,13 @@ export function createGlassFold(canvas, opts = {}) {
 
   if (!gl) {
     canvas.classList.add('is-fallback');
-    return { destroy() {}, pause() {}, resume() {}, resize() {} };
+    return {
+      destroy() {},
+      pause() {},
+      resume() {},
+      resize() {},
+      setScrolling() {},
+    };
   }
 
   const vs = compile(gl, gl.VERTEX_SHADER, vertSrc);
@@ -107,13 +118,18 @@ export function createGlassFold(canvas, opts = {}) {
   let time2 = 0;
   let raf = 0;
   let last = null;
+  let lastDraw = 0;
   let destroyed = false;
   let running = false;
   let inView = true;
   let pageVisible = !document.hidden;
+  let scrolling = false;
+  let forcedPause = false;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const pointer = [0.5, 0.5, 0];
+  let ptrDirty = false;
+  let ptrRaf = 0;
 
   function resize() {
     const parent = canvas.parentElement || canvas;
@@ -149,27 +165,36 @@ export function createGlassFold(canvas, opts = {}) {
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
+  function targetFps() {
+    return scrolling ? config.fpsScroll : config.fpsIdle;
+  }
+
   function frame(ts) {
     if (!running || destroyed) return;
+    raf = requestAnimationFrame(frame);
+    const minDt = 1000 / Math.max(8, targetFps());
+    if (ts - lastDraw < minDt) return;
     const dt = last == null ? 0 : Math.min((ts - last) / 1000, 0.1);
     last = ts;
+    lastDraw = ts;
     time += dt * speed;
     time2 += dt * speed * speed;
     draw();
-    raf = requestAnimationFrame(frame);
   }
 
   function sync() {
-    const should = !reduced && inView && pageVisible && !destroyed;
+    const should =
+      !reduced && !forcedPause && inView && pageVisible && !destroyed;
     if (should && !running) {
       running = true;
       last = null;
+      lastDraw = 0;
       raf = requestAnimationFrame(frame);
     } else if (!should && running) {
       running = false;
       cancelAnimationFrame(raf);
       raf = 0;
-      draw(); // still frame
+      draw();
     }
   }
 
@@ -179,16 +204,29 @@ export function createGlassFold(canvas, opts = {}) {
   };
   document.addEventListener('visibilitychange', onVis);
 
-  const ro = new ResizeObserver(() => resize());
+  const ro = new ResizeObserver(() => {
+    if (destroyed) return;
+    resize();
+  });
   ro.observe(canvas.parentElement || canvas);
 
-  const io = new IntersectionObserver(([entry]) => {
-    inView = entry.isIntersecting;
-    sync();
-  });
+  const io = new IntersectionObserver(
+    ([entry]) => {
+      inView = entry.isIntersecting && entry.intersectionRatio > 0.02;
+      sync();
+    },
+    { threshold: [0, 0.02, 0.1] },
+  );
   io.observe(canvas);
 
+  const flushPointer = () => {
+    ptrRaf = 0;
+    ptrDirty = false;
+    // pointer uniforms applied on next draw
+  };
+
   const onPointer = (e) => {
+    if (!running || destroyed) return;
     const r = canvas.getBoundingClientRect();
     if (!r.width || !r.height) return;
     const x = (e.clientX - r.left) / r.width;
@@ -197,6 +235,10 @@ export function createGlassFold(canvas, opts = {}) {
     pointer[0] = x;
     pointer[1] = y;
     pointer[2] = inside ? 1 : 0;
+    if (!ptrDirty) {
+      ptrDirty = true;
+      if (!ptrRaf) ptrRaf = requestAnimationFrame(flushPointer);
+    }
   };
   window.addEventListener('pointermove', onPointer, { passive: true });
 
@@ -207,12 +249,16 @@ export function createGlassFold(canvas, opts = {}) {
   return {
     resize,
     pause() {
-      running = false;
-      cancelAnimationFrame(raf);
-      raf = 0;
+      forcedPause = true;
+      sync();
     },
     resume() {
+      forcedPause = false;
       sync();
+    },
+    /** Drop FPS while Lenis/page is scrolling */
+    setScrolling(on) {
+      scrolling = !!on;
     },
     setColors({ color1, color2, color3 }) {
       if (color1) c1 = hexToRgb01(color1);
@@ -224,6 +270,7 @@ export function createGlassFold(canvas, opts = {}) {
       destroyed = true;
       running = false;
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(ptrRaf);
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('pointermove', onPointer);
       ro.disconnect();

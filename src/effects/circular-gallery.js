@@ -15,7 +15,7 @@ const DOT_R = 8;
 const DOT_GAP = 14;
 const EXPAND = 900;
 const AUTO_MS = 4500;
-/** Mild inset; open state uses cover (slice) to fill the landscape frame. */
+/** Full-bleed landscape frame; open uses cover (slice) — no letterboxing. */
 const IMG_PAD_X = 0;
 const IMG_PAD_Y = 0;
 const IMG_W = VIEW_W;
@@ -120,10 +120,10 @@ export function mountCircularGallery(root, opts = {}) {
     img.setAttribute('y', '0');
     img.setAttribute('width', String(VIEW_W));
     img.setAttribute('height', String(VIEW_H));
-    // Open: cover landscape frame (gentle center crop). Dots: meet to keep color readable.
+    // Open: cover landscape (centered crop). Dots: meet keeps color readable.
     img.setAttribute(
       'preserveAspectRatio',
-      mode === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet',
+      mode === 'open' || mode === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet',
     );
   }
 
@@ -137,7 +137,7 @@ export function mountCircularGallery(root, opts = {}) {
       g?.setAttribute('clip-path', `url(#${uid}_${i}_sq)`);
       // Open frame must sit above inactive dots (and their mattes)
       layer.style.zIndex = String(items.length + 20);
-      fitImage(img, 'cover');
+      fitImage(img, 'open');
       layer.classList.add('is-open');
       matte?.setAttribute('opacity', '1');
     } else {
@@ -195,7 +195,7 @@ export function mountCircularGallery(root, opts = {}) {
           </defs>
           <rect class="ccig__matte" width="${VIEW_W}" height="${VIEW_H}" opacity="${i === index ? 1 : 0}"></rect>
           <g data-ccig-clipped clip-path="url(#${uid}_${i}_circ)">
-            <image href="${item.image}" xlink:href="${item.image}" x="${IMG_PAD_X}" y="${IMG_PAD_Y}" width="${IMG_W}" height="${IMG_H}" preserveAspectRatio="xMidYMid meet"></image>
+            <image href="${item.image}" xlink:href="${item.image}" x="${IMG_PAD_X}" y="${IMG_PAD_Y}" width="${IMG_W}" height="${IMG_H}" preserveAspectRatio="xMidYMid slice"></image>
           </g>
         </svg>
       `;
@@ -367,6 +367,33 @@ export function mountCircularGallery(root, opts = {}) {
   shell?.addEventListener('pointerenter', onHoverEnter);
   shell?.addEventListener('pointerleave', onHoverLeave);
 
+  // Pause autoplay when gallery is offscreen or tab hidden
+  let inView = true;
+  const ioVis = new IntersectionObserver(
+    ([entry]) => {
+      inView = !!entry?.isIntersecting;
+      if (!inView) {
+        autoPaused = true;
+        clearAuto();
+      } else if (!document.hidden) {
+        autoPaused = false;
+        scheduleAuto();
+      }
+    },
+    { rootMargin: '10% 0px', threshold: 0.12 },
+  );
+  ioVis.observe(root);
+
+  const onDocVis = () => {
+    if (document.hidden) {
+      clearAuto();
+    } else if (inView) {
+      autoPaused = false;
+      scheduleAuto();
+    }
+  };
+  document.addEventListener('visibilitychange', onDocVis);
+
   const onPointerDown = (e) => {
     if (e.button != null && e.button !== 0 || busy) return;
     if (e.target.closest?.('.ccig__dot')) return;
@@ -478,6 +505,8 @@ export function mountCircularGallery(root, opts = {}) {
     },
     destroy() {
       clearAuto();
+      ioVis.disconnect();
+      document.removeEventListener('visibilitychange', onDocVis);
       shell?.removeEventListener('pointerenter', onHoverEnter);
       shell?.removeEventListener('pointerleave', onHoverLeave);
       frame.removeEventListener('pointerdown', onPointerDown);

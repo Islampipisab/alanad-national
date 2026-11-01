@@ -1,25 +1,60 @@
 /**
  * White-background video → canvas with alpha (fallback when WebM alpha unavailable).
+ * Perf: capped DPR, pause when hidden / offscreen / reduced-motion.
  */
-export function mountChromaKeyVideo(canvas, { src, similarity = 0.88, softness = 0.12 } = {}) {
-  const gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: false })
-    || canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
+export function mountChromaKeyVideo(
+  canvas,
+  {
+    src,
+    video: existingVideo = null,
+    poster = '',
+    similarity = 0.88,
+    softness = 0.12,
+    dprMax = 1.25,
+    reduced = false,
+  } = {},
+) {
+  const gl =
+    canvas.getContext('webgl2', {
+      alpha: true,
+      premultipliedAlpha: false,
+      antialias: false,
+      powerPreference: 'low-power',
+    }) ||
+    canvas.getContext('webgl', {
+      alpha: true,
+      premultipliedAlpha: false,
+      antialias: false,
+      powerPreference: 'low-power',
+    });
 
-  const video = document.createElement('video');
-  video.src = src;
+  const video = existingVideo || document.createElement('video');
+  if (!existingVideo) {
+    video.src = src;
+    video.preload = 'metadata';
+    video.crossOrigin = 'anonymous';
+  } else if (src && !video.currentSrc) {
+    video.src = src;
+  }
   video.muted = true;
+  video.defaultMuted = true;
   video.loop = true;
   video.playsInline = true;
-  video.preload = 'metadata';
+  video.setAttribute('muted', '');
   video.setAttribute('playsinline', '');
-  video.crossOrigin = 'anonymous';
+  if (poster) video.setAttribute('poster', poster);
 
   if (!gl) {
-    // 2D fallback: draw video; CSS mix-blend may help but keep poster path
     return {
       video,
       async start() {
         await video.play().catch(() => {});
+      },
+      pause() {
+        video.pause();
+      },
+      resume() {
+        video.play().catch(() => {});
       },
       destroy() {
         video.pause();
@@ -43,7 +78,6 @@ export function mountChromaKeyVideo(canvas, { src, similarity = 0.88, softness =
     vec4 c = texture(uTex, uv);
     float luma = dot(c.rgb, vec3(0.299, 0.587, 0.114));
     float white = smoothstep(uSim - uSoft, uSim + uSoft, luma);
-    // also kill near-white low-saturation pixels
     float sat = max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b));
     float key = max(white, smoothstep(0.12, 0.02, sat) * smoothstep(0.75, 0.95, luma));
     float a = 1.0 - key;
@@ -60,8 +94,8 @@ export function mountChromaKeyVideo(canvas, { src, similarity = 0.88, softness =
     return s;
   }
 
-  // WebGL1 fallback shaders if webgl2 failed already handled; if context is webgl1, skip GLSL3
-  const isWebGL2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
+  const isWebGL2 =
+    typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
   let program;
   if (isWebGL2) {
     const p = gl.createProgram();
@@ -108,10 +142,14 @@ export function mountChromaKeyVideo(canvas, { src, similarity = 0.88, softness =
 
   let raf = 0;
   let running = false;
+  let wantRun = false;
+  let destroyed = false;
+  let lastDraw = 0;
+  const fps = 28;
 
   function resize() {
     const r = canvas.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, dprMax);
     const w = Math.max(1, Math.floor(r.width * dpr));
     const h = Math.max(1, Math.floor(r.height * dpr));
     if (canvas.width !== w || canvas.height !== h) {
@@ -121,8 +159,12 @@ export function mountChromaKeyVideo(canvas, { src, similarity = 0.88, softness =
     }
   }
 
-  function frame() {
-    if (!running) return;
+  function frame(ts) {
+    if (!running || destroyed) return;
+    raf = requestAnimationFrame(frame);
+    const minDt = 1000 / fps;
+    if (ts - lastDraw < minDt) return;
+    lastDraw = ts;
     resize();
     if (video.readyState >= 2) {
       gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -133,21 +175,48 @@ export function mountChromaKeyVideo(canvas, { src, similarity = 0.88, softness =
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
-    raf = requestAnimationFrame(frame);
   }
+
+  function sync() {
+    const should = wantRun && !reduced && !destroyed && !document.hidden;
+    if (should && !running) {
+      running = true;
+      lastDraw = 0;
+      video.play().catch(() => {});
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(frame);
+    } else if (!should && running) {
+      running = false;
+      cancelAnimationFrame(raf);
+      raf = 0;
+      video.pause();
+    }
+  }
+
+  const onVis = () => sync();
+  document.addEventListener('visibilitychange', onVis);
 
   return {
     video,
     async start() {
-      running = true;
+      wantRun = true;
       resize();
-      await video.play().catch(() => {});
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(frame);
+      sync();
+    },
+    pause() {
+      wantRun = false;
+      sync();
+    },
+    resume() {
+      wantRun = true;
+      sync();
     },
     destroy() {
+      destroyed = true;
+      wantRun = false;
       running = false;
       cancelAnimationFrame(raf);
+      document.removeEventListener('visibilitychange', onVis);
       video.pause();
       video.removeAttribute('src');
       video.load();

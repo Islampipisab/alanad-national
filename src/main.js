@@ -14,6 +14,10 @@ if (reduced) document.documentElement.classList.add('reduced');
 
 /** @type {{ setActive: Function, refresh: Function, destroy: Function } | null} */
 let liquidNav = null;
+/** @type {{ pause: Function, resume: Function, setScrolling: Function, destroy: Function } | null} */
+let glassFoldApi = null;
+/** @type {{ pause: Function, resume: Function, destroy: Function } | null} */
+let heroProduceApi = null;
 
 const saved = localStorage.getItem('lang');
 const lang = saved === 'en' || saved === 'ar' ? saved : 'ar';
@@ -115,9 +119,12 @@ function initGlassFold() {
       color1: '#1F6B45',
       color2: '#08291D',
       color3: '#B5D95B',
-      speed: 0.42,
-      scale: 1.08,
-      noise: 0.11,
+      speed: 0.34,
+      scale: 1.06,
+      noise: 0.1,
+      dprMax: matchMedia('(pointer: coarse)').matches ? 1 : 1.25,
+      fpsIdle: 26,
+      fpsScroll: 10,
     });
   } catch (err) {
     console.warn('GlassFold failed', err);
@@ -130,7 +137,7 @@ function toGalleryItem(p) {
   const fruit = p.cat === 'fruit';
   return {
     id: p.slug,
-    image: `/img/products/${p.slug}.jpg`,
+    image: `/img/gallery/${p.slug}.jpg`,
     titleAr: p.ar,
     titleEn: p.en,
     cat: p.cat,
@@ -206,45 +213,75 @@ function initProductsGallery() {
 }
 
 function initLogoVideo() {
+  // Site-wide translucent logo-video watermark stays off (CPU/GPU win).
   const video = document.querySelector('#logoVideo');
-  const wrap = document.querySelector('.site-bg__video-wrap');
   if (!video) return;
-
-  const canAutoplay =
-    !reduced && window.matchMedia('(min-width: 768px)').matches && !matchMedia('(pointer: coarse)').matches;
-
-  const markReady = () => {
-    video.classList.add('is-ready');
-    wrap?.classList.add('is-playing');
-  };
-
-  const tryPlay = () => {
-    if (!canAutoplay) return;
-    video.muted = true;
-    const p = video.play();
-    if (p && typeof p.then === 'function') {
-      p.then(markReady).catch(() => {
-        /* poster stays */
-      });
-    }
-  };
-
-  if (canAutoplay) {
-    video.preload = 'auto';
-    tryPlay();
-  } else {
-    video.preload = 'metadata';
-    wrap?.classList.add('is-still');
+  try {
+    video.pause();
+    video.removeAttribute('src');
+    video.querySelectorAll('source').forEach((s) => s.remove());
+    video.load();
+  } catch {
+    /* ignore */
   }
+}
 
-  video.addEventListener('loadeddata', () => {
-    if (!video.paused) markReady();
-  });
+/**
+ * Floating hero media beside copy: gemini_generated_video_7b20eecd.mp4
+ * muted + playsinline + poster. Direct video (this asset is not a white-key plate).
+ */
+function initHeroProduce() {
+  const canvas = document.querySelector('#heroProduceKey');
+  const videoEl = document.querySelector('#heroProduceVideo');
+  const host = document.querySelector('.hero__brand-float');
+  if (!host || !videoEl) return null;
 
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden && !video.paused) video.pause();
-    else if (!document.hidden && canAutoplay && video.paused) tryPlay();
-  });
+  const poster = '/media/hero-poster.jpg';
+  videoEl.muted = true;
+  videoEl.defaultMuted = true;
+  videoEl.playsInline = true;
+  videoEl.loop = true;
+  videoEl.preload = reduced ? 'none' : 'metadata';
+  videoEl.setAttribute('muted', '');
+  videoEl.setAttribute('playsinline', '');
+  videoEl.setAttribute('poster', poster);
+
+  // Hide unused chroma canvas — 7b20eecd is a logo plate, not a white-key shoot
+  if (canvas) canvas.hidden = true;
+  host.classList.add('is-video-fallback');
+  host.classList.remove('is-keyed');
+
+  const play = () => {
+    if (reduced) return;
+    videoEl.play().catch(() => {});
+  };
+  const pause = () => videoEl.pause();
+
+  const io = new IntersectionObserver(
+    ([entry]) => {
+      if (entry?.isIntersecting) play();
+      else pause();
+    },
+    { threshold: 0.15, rootMargin: '8% 0px' },
+  );
+  io.observe(host);
+
+  const onVis = () => {
+    if (document.hidden) pause();
+    else if (host.getBoundingClientRect().bottom > 0) play();
+  };
+  document.addEventListener('visibilitychange', onVis);
+  play();
+
+  return {
+    pause,
+    resume: play,
+    destroy() {
+      io.disconnect();
+      document.removeEventListener('visibilitychange', onVis);
+      pause();
+    },
+  };
 }
 
 function initAboutMedia() {
@@ -271,24 +308,6 @@ function initAboutMedia() {
   });
 }
 
-function initParallax() {
-  if (reduced) return;
-  const layer = document.querySelector('.hero__produce');
-  if (!layer) return;
-  // Orbit slots only — trampoline translates the whole .hero__float circle
-  const nodes = [...layer.querySelectorAll('.hero__orbit[data-depth]')];
-
-  const onMove = (e) => {
-    const x = (e.clientX / window.innerWidth - 0.5) * 2;
-    const y = (e.clientY / window.innerHeight - 0.5) * 2;
-    nodes.forEach((n) => {
-      const d = Number(n.dataset.depth || 0.2);
-      n.style.transform = `translate3d(${x * d * -22}px, ${y * d * -14}px, 0)`;
-    });
-  };
-  window.addEventListener('pointermove', onMove, { passive: true });
-}
-
 function initTilt() {
   if (reduced) return;
   document.querySelectorAll('[data-tilt]').forEach((card) => {
@@ -307,16 +326,32 @@ function initTilt() {
 function initSmoothScroll() {
   if (reduced) return null;
   const lenis = new Lenis({
-    // Softer page scroll — lower lerp + reduced wheel/touch multipliers
-    duration: 1.65,
-    lerp: 0.065,
-    wheelMultiplier: 0.62,
-    touchMultiplier: 0.7,
+    // Lighter smooth scroll — less work per frame under WebGL load
+    duration: 1.2,
+    lerp: 0.1,
+    wheelMultiplier: 0.72,
+    touchMultiplier: 0.8,
     easing: (t) => Math.min(1, 1.001 - 2 ** (-10 * t)),
   });
-  lenis.on('scroll', ScrollTrigger.update);
+
+  let stRaf = 0;
+  let scrollIdleTimer = 0;
+  lenis.on('scroll', () => {
+    glassFoldApi?.setScrolling?.(true);
+    if (scrollIdleTimer) window.clearTimeout(scrollIdleTimer);
+    scrollIdleTimer = window.setTimeout(() => {
+      glassFoldApi?.setScrolling?.(false);
+    }, 140);
+    if (stRaf) return;
+    stRaf = requestAnimationFrame(() => {
+      stRaf = 0;
+      ScrollTrigger.update();
+    });
+  });
+
   gsap.ticker.add((time) => lenis.raf(time * 1000));
-  gsap.ticker.lagSmoothing(0);
+  // Keep mild lag smoothing so spikes don't cascade jank
+  gsap.ticker.lagSmoothing(500, 33);
   return lenis;
 }
 
@@ -343,7 +378,7 @@ function initMotion(lenis) {
   tl.to('.preloader__bar i', { width: '100%', duration: 0.7, ease: 'power2.inOut' }, 0)
     .to('.preloader', { opacity: 0, duration: 0.5, pointerEvents: 'none' }, '+=0.15')
     .set('.preloader', { visibility: 'hidden' })
-    .from('.site-bg__video-wrap', { opacity: 0, scale: 1.08, duration: 1.4 }, 0.15)
+    .from('.hero__brand-float', { opacity: 0, scale: 0.86, y: 28, duration: 1.05 }, 0.35)
     .from('.hero__badge', { y: 24, opacity: 0, duration: 0.6 }, 0.55)
     .from(
       '.hero__title .split-w > span',
@@ -352,7 +387,6 @@ function initMotion(lenis) {
     )
     .from('.hero__sub, .hero__lead', { y: 24, opacity: 0, duration: 0.7, stagger: 0.1 }, 0.95)
     .from('.hero__ctas .btn', { y: 20, opacity: 0, duration: 0.55, stagger: 0.08 }, 1.15)
-    .from('.hero__orbit', { y: 40, opacity: 0, duration: 0.9, stagger: 0.08 }, 0.85)
     .from('.hero__stats', { y: 40, opacity: 0, duration: 0.8 }, 1.25);
 
   document.querySelectorAll('[data-reveal]').forEach((el) => {
@@ -421,24 +455,64 @@ function initMotion(lenis) {
     });
   });
 
-  // Sticky show-on-scroll-up header
+  // Sticky show-on-scroll-up — lockY hysteresis (Lenis per-frame dy is tiny)
   const nav = document.querySelector('#nav');
-  let lastY = 0;
-  ScrollTrigger.create({
-    start: 0,
-    onUpdate: (self) => {
-      const y = self.scroll();
-      nav?.classList.toggle('is-solid', y > 40);
-      const menuOpen = document.querySelector('#navLinks')?.classList.contains('is-open');
-      if (!nav || menuOpen || y < 48) {
-        nav?.classList.remove('is-hidden');
-      } else if (y > lastY + 6) {
-        nav.classList.add('is-hidden');
-      } else if (y < lastY - 6) {
-        nav.classList.remove('is-hidden');
+  let lockY = 0;
+  let navHidden = false;
+  let navRaf = 0;
+  let pendingY = 0;
+
+  const applyNavState = (y) => {
+    if (!nav) return;
+    const menuOpen = document.querySelector('#navLinks')?.classList.contains('is-open');
+    const keep = menuOpen || nav.contains(document.activeElement);
+    nav.classList.toggle('is-solid', y > 40);
+
+    let nextHidden = navHidden;
+    if (keep || y < 72) {
+      nextHidden = false;
+      lockY = y;
+    } else if (!navHidden) {
+      if (y - lockY > 24) {
+        nextHidden = true;
+        lockY = y;
+      } else if (y < lockY) {
+        lockY = y;
       }
-      lastY = y;
-    },
+    } else if (lockY - y > 18) {
+      nextHidden = false;
+      lockY = y;
+    } else if (y > lockY) {
+      lockY = y;
+    }
+
+    if (nextHidden !== navHidden) {
+      navHidden = nextHidden;
+      nav.classList.toggle('is-hidden', navHidden);
+    }
+  };
+
+  const onNavScroll = () => {
+    pendingY =
+      typeof lenis?.scroll === 'number'
+        ? lenis.scroll
+        : window.scrollY || document.documentElement.scrollTop || 0;
+    if (navRaf) return;
+    navRaf = requestAnimationFrame(() => {
+      navRaf = 0;
+      applyNavState(pendingY);
+    });
+  };
+
+  if (lenis) {
+    lenis.on('scroll', onNavScroll);
+  }
+  // Fallback for non-Lenis / programmatic scroll
+  window.addEventListener('scroll', onNavScroll, { passive: true });
+  nav?.addEventListener('focusin', () => {
+    navHidden = false;
+    lockY = pendingY;
+    nav?.classList.remove('is-hidden');
   });
 
   // Liquid glass navbar — scroll sync + tomato morph on click
@@ -518,10 +592,10 @@ applyI18n(lang);
 renderPartners();
 renderProducts();
 initUI();
-initGlassFold();
+glassFoldApi = initGlassFold();
 initLogoVideo();
+heroProduceApi = initHeroProduce();
 initAboutMedia();
-initParallax();
 initTilt();
 const lenis = initSmoothScroll();
 initProductsGallery();
