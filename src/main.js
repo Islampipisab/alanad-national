@@ -4,12 +4,16 @@ import Lenis from 'lenis';
 import { STRINGS, PARTNERS, CONTACT } from './data/i18n.js';
 import products from './data/products.json';
 import { createGlassFold } from './effects/glass-fold/createGlassFold.js';
-import { mountCylinderCarousel } from './effects/cylinder-carousel.js';
+import { mountCircularGallery } from './effects/circular-gallery.js';
+import { mountLiquidNavbar } from './effects/liquid-navbar.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 if (reduced) document.documentElement.classList.add('reduced');
+
+/** @type {{ setActive: Function, refresh: Function, destroy: Function } | null} */
+let liquidNav = null;
 
 const saved = localStorage.getItem('lang');
 const lang = saved === 'en' || saved === 'ar' ? saved : 'ar';
@@ -47,13 +51,20 @@ function applyI18n(locale) {
     if (typeof value === 'string') el.setAttribute('aria-label', value);
   });
 
+  document.querySelectorAll('.produce-name[data-name-ar]').forEach((el) => {
+    el.textContent = locale === 'en' ? el.dataset.nameEn : el.dataset.nameAr;
+  });
+
   document.querySelectorAll('.lang__btn').forEach((btn) => {
     btn.classList.toggle('is-active', btn.dataset.lang === locale);
   });
 
+  // Re-measure liquid blob after AR/EN label width changes
+  requestAnimationFrame(() => liquidNav?.refresh?.());
+
   localStorage.setItem('lang', locale);
   renderProducts();
-  carouselApi?.setLabels?.(locale);
+  galleryApi?.setLabels?.(locale);
 }
 
 function splitHeadings() {
@@ -87,21 +98,34 @@ function langNow() {
   return document.documentElement.lang === 'en' ? 'en' : 'ar';
 }
 
+function produceType(cat, locale = langNow()) {
+  const fruit = cat === 'fruit';
+  if (locale === 'en') return fruit ? STRINGS.en.products.typeFruit : STRINGS.en.products.typeVeg;
+  return fruit ? STRINGS.ar.products.typeFruit : STRINGS.ar.products.typeVeg;
+}
+
 function renderProducts(filter = '') {
   const grid = document.querySelector('#productGrid');
   if (!grid) return;
   const q = filter.trim().toLowerCase();
+  const locale = langNow();
   const list = products.filter((p) => {
     if (!q) return true;
-    return `${p.ar} ${p.en} ${p.slug}`.toLowerCase().includes(q);
+    const type = produceType(p.cat, locale);
+    return `${p.ar} ${p.en} ${p.slug} ${type}`.toLowerCase().includes(q);
   });
   grid.innerHTML = list
-    .map(
-      (p) => `<figure class="pcard" data-cat="${p.cat}">
-        <img src="/img/products/${p.slug}.jpg" alt="${p.en}" width="160" height="160" loading="lazy" decoding="async" />
-        <figcaption>${productLabel(p)}</figcaption>
-      </figure>`,
-    )
+    .map((p) => {
+      const type = produceType(p.cat, locale);
+      const name = productLabel(p);
+      return `<figure class="pcard" data-cat="${p.cat}">
+        <img src="/img/products/${p.slug}.jpg" alt="${type} — ${name}" width="160" height="160" loading="lazy" decoding="async" />
+        <figcaption class="produce-label">
+          <span class="produce-type">${type}</span>
+          <span class="produce-name">${name}</span>
+        </figcaption>
+      </figure>`;
+    })
     .join('');
 }
 
@@ -124,112 +148,80 @@ function initGlassFold() {
   }
 }
 
-const PRODUCT_CAROUSEL_ITEMS = [
-  {
-    id: 'seasonal',
-    image: '/img/categories/seasonal.jpg',
-    titleAr: 'منتجات موسمية',
-    titleEn: 'Seasonal products',
-  },
-  {
-    id: 'leafy',
-    image: '/img/categories/leafy.jpg',
-    titleAr: 'الخضروات الورقية',
-    titleEn: 'Leafy greens',
-  },
-  {
-    id: 'staple',
-    image: '/img/categories/staple.jpg',
-    titleAr: 'المحاصيل الأساسية',
-    titleEn: 'Staple crops',
-  },
-  {
-    id: 'vegetables',
-    image: '/img/categories/vegetables.jpg',
-    titleAr: 'الخضروات',
-    titleEn: 'Vegetables',
-  },
-  {
-    id: 'fruits',
-    image: '/img/categories/fruits.jpg',
-    titleAr: 'الفواكه',
-    titleEn: 'Fruits',
-  },
-  {
-    id: 'tomato',
-    image: '/img/products/tomato.jpg',
-    titleAr: 'طماطم',
-    titleEn: 'Tomato',
-  },
-  {
-    id: 'cucumber',
-    image: '/img/products/cucumber.jpg',
-    titleAr: 'خيار',
-    titleEn: 'Cucumber',
-  },
-  {
-    id: 'pepper',
-    image: '/img/products/red-pepper.jpg',
-    titleAr: 'فلفل',
-    titleEn: 'Pepper',
-  },
-  {
-    id: 'carrot',
-    image: '/img/products/carrot.jpg',
-    titleAr: 'جزر',
-    titleEn: 'Carrot',
-  },
-  {
-    id: 'cabbage',
-    image: '/img/products/cabbage.jpg',
-    titleAr: 'ملفوف',
-    titleEn: 'Cabbage',
-  },
-  {
-    id: 'strawberry',
-    image: '/img/products/strawberry.jpg',
-    titleAr: 'فراولة',
-    titleEn: 'Strawberry',
-  },
-  {
-    id: 'grape',
-    image: '/img/products/red-grapes.jpg',
-    titleAr: 'عنب',
-    titleEn: 'Grape',
-  },
-];
+function toGalleryItem(p) {
+  const fruit = p.cat === 'fruit';
+  return {
+    id: p.slug,
+    image: `/img/products/${p.slug}.jpg`,
+    titleAr: p.ar,
+    titleEn: p.en,
+    cat: p.cat,
+    typeAr: fruit ? STRINGS.ar.products.typeFruit : STRINGS.ar.products.typeVeg,
+    typeEn: fruit ? STRINGS.en.products.typeFruit : STRINGS.en.products.typeVeg,
+  };
+}
 
-let carouselApi = null;
+const PRODUCT_GALLERY_ITEMS = products.map(toGalleryItem);
+const FILTER_COUNTS = {
+  all: products.length,
+  veg: products.filter((p) => p.cat === 'veg').length,
+  leaf: products.filter((p) => p.cat === 'leaf').length,
+  fruit: products.filter((p) => p.cat === 'fruit').length,
+};
 
-function initProductsCarousel(lenis) {
-  const root = document.querySelector('#productsCarousel');
+let galleryApi = null;
+let activeGalleryFilter = 'all';
+
+/** Cap dots in the clip gallery so the square frame stays readable. */
+const GALLERY_CAP = 12;
+
+function galleryItemsFor(filter = 'all', query = '') {
+  const q = query.trim().toLowerCase();
+  const list = PRODUCT_GALLERY_ITEMS.filter((item) => {
+    if (filter !== 'all' && item.cat !== filter) return false;
+    if (!q) return true;
+    const type = `${item.typeAr} ${item.typeEn}`;
+    return `${item.titleAr} ${item.titleEn} ${item.id} ${type}`.toLowerCase().includes(q);
+  });
+  return list.slice(0, GALLERY_CAP);
+}
+
+function syncFilterCounts() {
+  Object.entries(FILTER_COUNTS).forEach(([key, count]) => {
+    document.querySelectorAll(`[data-filter-count="${key}"]`).forEach((el) => {
+      el.textContent = String(count);
+    });
+  });
+}
+
+function setGalleryFilter(filter, { fromSearch = false } = {}) {
+  activeGalleryFilter = filter || 'all';
+  document.querySelectorAll('#productFilters .filter-pill').forEach((btn) => {
+    const on = btn.dataset.filter === activeGalleryFilter;
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-selected', String(on));
+  });
+  const q = document.querySelector('#productSearch')?.value || '';
+  const next = galleryItemsFor(activeGalleryFilter, q);
+  galleryApi?.setItems?.(next, { animate: !fromSearch });
+}
+
+function initProductsGallery() {
+  const root = document.querySelector('#productsGallery');
   if (!root) return;
-  carouselApi = mountCylinderCarousel(root, {
-    items: PRODUCT_CAROUSEL_ITEMS,
+  syncFilterCounts();
+  galleryApi = mountCircularGallery(root, {
+    items: galleryItemsFor('all'),
     reduced,
     locale: langNow(),
-    lenis,
     hintAr: STRINGS.ar.products.carouselHint,
     hintEn: STRINGS.en.products.carouselHint,
-    onSelect: (index) => {
-      const cat = PRODUCT_CAROUSEL_ITEMS[index];
+    onSelect: (_index, item) => {
       const catalog = document.querySelector('#catalog');
       catalog?.removeAttribute('hidden');
-      const map = {
-        leafy: 'leaf',
-        fruits: 'fruit',
-        vegetables: 'veg',
-        staple: 'veg',
-        seasonal: '',
-        tomato: 'veg',
-        cucumber: 'veg',
-        pepper: 'veg',
-        carrot: 'veg',
-        cabbage: 'leaf',
-        strawberry: 'fruit',
-        grape: 'fruit',
-      };
-      const want = map[cat.id] ?? '';
+      const want = item?.cat || '';
+      const search = document.querySelector('#productSearch');
+      if (search) search.value = '';
       renderProducts();
       if (want) {
         [...document.querySelectorAll('#productGrid .pcard')].forEach((card) => {
@@ -237,6 +229,14 @@ function initProductsCarousel(lenis) {
         });
       }
     },
+  });
+
+  document.querySelectorAll('#productFilters .filter-pill').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const filter = btn.dataset.filter || 'all';
+      if (filter === activeGalleryFilter) return;
+      setGalleryFilter(filter);
+    });
   });
 }
 
@@ -342,7 +342,11 @@ function initTilt() {
 function initSmoothScroll() {
   if (reduced) return null;
   const lenis = new Lenis({
-    duration: 1.15,
+    // Softer page scroll — lower lerp + reduced wheel/touch multipliers
+    duration: 1.65,
+    lerp: 0.065,
+    wheelMultiplier: 0.62,
+    touchMultiplier: 0.7,
     easing: (t) => Math.min(1, 1.001 - 2 ** (-10 * t)),
   });
   lenis.on('scroll', ScrollTrigger.update);
@@ -452,43 +456,51 @@ function initMotion(lenis) {
     });
   });
 
-  // Nav solid on scroll
+  // Sticky show-on-scroll-up header
   const nav = document.querySelector('#nav');
+  let lastY = 0;
   ScrollTrigger.create({
-    start: 40,
-    onUpdate: (self) => nav?.classList.toggle('is-solid', self.scroll() > 40),
+    start: 0,
+    onUpdate: (self) => {
+      const y = self.scroll();
+      nav?.classList.toggle('is-solid', y > 40);
+      const menuOpen = document.querySelector('#navLinks')?.classList.contains('is-open');
+      if (!nav || menuOpen || y < 48) {
+        nav?.classList.remove('is-hidden');
+      } else if (y > lastY + 6) {
+        nav.classList.add('is-hidden');
+      } else if (y < lastY - 6) {
+        nav.classList.remove('is-hidden');
+      }
+      lastY = y;
+    },
   });
 
-  // Active nav link
-  const links = [...document.querySelectorAll('.nav__links a')];
-  links.forEach((link) => {
-    const id = link.getAttribute('href');
-    if (!id || !id.startsWith('#')) return;
-    const section = document.querySelector(id);
-    if (!section) return;
-    ScrollTrigger.create({
-      trigger: section,
-      start: 'top 45%',
-      end: 'bottom 45%',
-      onToggle: (self) => {
-        if (self.isActive) {
-          links.forEach((l) => l.classList.remove('is-active'));
-          link.classList.add('is-active');
-        }
-      },
-    });
+  // Liquid glass navbar — scroll sync + tomato morph on click
+  liquidNav = mountLiquidNavbar(document.querySelector('#navLinks'), {
+    reduced,
+    getLocale: langNow,
+    onNavigate: (href) => {
+      const target = document.querySelector(href);
+      if (!target) return;
+      document.querySelector('#navLinks')?.classList.remove('is-open');
+      document.querySelector('#burger')?.setAttribute('aria-expanded', 'false');
+      if (lenis) lenis.scrollTo(target, { offset: -70, duration: 1.75 });
+      else target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+    },
   });
 
-  // Smooth anchor clicks
+  // Smooth anchor clicks (non-liquid links: brand, CTAs, footer)
   document.querySelectorAll('a[href^="#"]').forEach((a) => {
     a.addEventListener('click', (e) => {
+      if (a.hasAttribute('data-liquid-link')) return;
       const id = a.getAttribute('href');
       const target = id && document.querySelector(id);
       if (!target) return;
       e.preventDefault();
       document.querySelector('#navLinks')?.classList.remove('is-open');
       document.querySelector('#burger')?.setAttribute('aria-expanded', 'false');
-      if (lenis) lenis.scrollTo(target, { offset: -70, duration: 1.35 });
+      if (lenis) lenis.scrollTo(target, { offset: -70, duration: 1.75 });
       else target.scrollIntoView({ behavior: 'smooth' });
     });
   });
@@ -512,6 +524,7 @@ function initUI() {
   burger?.addEventListener('click', () => {
     const open = navLinks.classList.toggle('is-open');
     burger.setAttribute('aria-expanded', String(open));
+    if (open) requestAnimationFrame(() => liquidNav?.refresh?.());
   });
 
   const catalog = document.querySelector('#catalog');
@@ -522,26 +535,19 @@ function initUI() {
     if (hidden) catalog.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
   });
 
-  document.querySelectorAll('.cat').forEach((cat) => {
-    cat.addEventListener('click', (e) => {
-      e.preventDefault();
-      catalog?.removeAttribute('hidden');
-      const key = cat.dataset.cat;
-      const map = { leafy: 'leaf', fruits: 'fruit', vegetables: 'veg', staple: 'veg', seasonal: '' };
-      const want = map[key] ?? '';
-      document.querySelector('#productSearch').value = '';
-      renderProducts();
-      if (want) {
-        [...document.querySelectorAll('#productGrid .pcard')].forEach((card) => {
-          card.hidden = want ? card.dataset.cat !== want : false;
-        });
-      }
-      catalog?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
-    });
-  });
-
   document.querySelector('#productSearch')?.addEventListener('input', (e) => {
-    renderProducts(e.target.value);
+    const q = e.target.value;
+    const next = galleryItemsFor(activeGalleryFilter, q);
+    galleryApi?.setItems?.(next, { animate: false });
+    if (q.trim()) {
+      catalog?.removeAttribute('hidden');
+      renderProducts(q);
+    } else if (activeGalleryFilter !== 'all') {
+      // keep catalog closed; gallery already filtered by pill
+      renderProducts('');
+    } else {
+      renderProducts('');
+    }
   });
 
   document.querySelector('#contactForm')?.addEventListener('submit', (e) => {
@@ -571,5 +577,5 @@ initAboutMedia();
 initParallax();
 initTilt();
 const lenis = initSmoothScroll();
-initProductsCarousel(lenis);
+initProductsGallery();
 initMotion(lenis);
