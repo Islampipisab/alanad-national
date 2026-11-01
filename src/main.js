@@ -104,30 +104,8 @@ function produceType(cat, locale = langNow()) {
   return fruit ? STRINGS.ar.products.typeFruit : STRINGS.ar.products.typeVeg;
 }
 
-function renderProducts(filter = '') {
-  const grid = document.querySelector('#productGrid');
-  if (!grid) return;
-  const q = filter.trim().toLowerCase();
-  const locale = langNow();
-  const list = products.filter((p) => {
-    if (!q) return true;
-    const type = produceType(p.cat, locale);
-    return `${p.ar} ${p.en} ${p.slug} ${type}`.toLowerCase().includes(q);
-  });
-  grid.innerHTML = list
-    .map((p) => {
-      const type = produceType(p.cat, locale);
-      const name = productLabel(p);
-      return `<figure class="pcard" data-cat="${p.cat}">
-        <img src="/img/products/${p.slug}.jpg" alt="${type} — ${name}" width="160" height="160" loading="lazy" decoding="async" />
-        <figcaption class="produce-label">
-          <span class="produce-type">${type}</span>
-          <span class="produce-name">${name}</span>
-        </figcaption>
-      </figure>`;
-    })
-    .join('');
-}
+/** Catalog grid removed — keep stub so i18n/lang refresh stays safe. */
+function renderProducts() {}
 
 function initGlassFold() {
   const canvas = document.querySelector('#glassFold');
@@ -216,19 +194,6 @@ function initProductsGallery() {
     locale: langNow(),
     hintAr: STRINGS.ar.products.carouselHint,
     hintEn: STRINGS.en.products.carouselHint,
-    onSelect: (_index, item) => {
-      const catalog = document.querySelector('#catalog');
-      catalog?.removeAttribute('hidden');
-      const want = item?.cat || '';
-      const search = document.querySelector('#productSearch');
-      if (search) search.value = '';
-      renderProducts();
-      if (want) {
-        [...document.querySelectorAll('#productGrid .pcard')].forEach((card) => {
-          card.hidden = card.dataset.cat !== want;
-        });
-      }
-    },
   });
 
   document.querySelectorAll('#productFilters .filter-pill').forEach((btn) => {
@@ -527,27 +492,9 @@ function initUI() {
     if (open) requestAnimationFrame(() => liquidNav?.refresh?.());
   });
 
-  const catalog = document.querySelector('#catalog');
-  document.querySelector('#toggleCatalog')?.addEventListener('click', () => {
-    const hidden = catalog.hasAttribute('hidden');
-    if (hidden) catalog.removeAttribute('hidden');
-    else catalog.setAttribute('hidden', '');
-    if (hidden) catalog.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
-  });
-
   document.querySelector('#productSearch')?.addEventListener('input', (e) => {
     const q = e.target.value;
-    const next = galleryItemsFor(activeGalleryFilter, q);
-    galleryApi?.setItems?.(next, { animate: false });
-    if (q.trim()) {
-      catalog?.removeAttribute('hidden');
-      renderProducts(q);
-    } else if (activeGalleryFilter !== 'all') {
-      // keep catalog closed; gallery already filtered by pill
-      renderProducts('');
-    } else {
-      renderProducts('');
-    }
+    galleryApi?.setItems?.(galleryItemsFor(activeGalleryFilter, q), { animate: false });
   });
 
   document.querySelector('#contactForm')?.addEventListener('submit', (e) => {

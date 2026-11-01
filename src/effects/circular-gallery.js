@@ -8,18 +8,18 @@ import { MotionPathPlugin } from 'gsap/MotionPathPlugin';
 
 gsap.registerPlugin(MotionPathPlugin);
 
-/** ViewBox matches product asset ratio (4:5 / 520×650). */
-const VIEW_W = 400;
-const VIEW_H = 500;
-const DOT_R = 7;
-const DOT_GAP = 12;
-const EXPAND = 700;
+/** Wide landscape viewBox (~16:9) for full-bleed gallery. */
+const VIEW_W = 1600;
+const VIEW_H = 900;
+const DOT_R = 8;
+const DOT_GAP = 14;
+const EXPAND = 900;
 const AUTO_MS = 4500;
-/** Soft inset — full produce visible without extreme zoom. */
-const IMG_PAD_X = 18;
-const IMG_PAD_Y = 22;
-const IMG_W = VIEW_W - IMG_PAD_X * 2;
-const IMG_H = VIEW_H - IMG_PAD_Y * 2;
+/** Mild inset; open state uses cover (slice) to fill the landscape frame. */
+const IMG_PAD_X = 0;
+const IMG_PAD_Y = 0;
+const IMG_W = VIEW_W;
+const IMG_H = VIEW_H;
 
 /**
  * @param {HTMLElement} root
@@ -116,19 +116,15 @@ export function mountCircularGallery(root, opts = {}) {
 
   function fitImage(img, mode) {
     if (!img) return;
-    // Always meet (contain) — product assets are 4:5 portraits; no extreme zoom
-    img.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    if (mode === 'contain') {
-      img.setAttribute('x', String(IMG_PAD_X));
-      img.setAttribute('y', String(IMG_PAD_Y));
-      img.setAttribute('width', String(IMG_W));
-      img.setAttribute('height', String(IMG_H));
-    } else {
-      img.setAttribute('x', '10');
-      img.setAttribute('y', '12');
-      img.setAttribute('width', String(VIEW_W - 20));
-      img.setAttribute('height', String(VIEW_H - 24));
-    }
+    img.setAttribute('x', '0');
+    img.setAttribute('y', '0');
+    img.setAttribute('width', String(VIEW_W));
+    img.setAttribute('height', String(VIEW_H));
+    // Open: cover landscape frame (gentle center crop). Dots: meet to keep color readable.
+    img.setAttribute(
+      'preserveAspectRatio',
+      mode === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet',
+    );
   }
 
   function setLayerState(i, inPlace) {
@@ -141,7 +137,7 @@ export function mountCircularGallery(root, opts = {}) {
       g?.setAttribute('clip-path', `url(#${uid}_${i}_sq)`);
       // Open frame must sit above inactive dots (and their mattes)
       layer.style.zIndex = String(items.length + 20);
-      fitImage(img, 'contain');
+      fitImage(img, 'cover');
       layer.classList.add('is-open');
       matte?.setAttribute('opacity', '1');
     } else {
@@ -149,7 +145,6 @@ export function mountCircularGallery(root, opts = {}) {
       layer.style.zIndex = String(i + 1);
       fitImage(img, 'dot');
       layer.classList.remove('is-open');
-      // No full-frame matte on dots — it was covering the open image
       matte?.setAttribute('opacity', '0');
     }
     if (img && items[i]) {
@@ -207,7 +202,7 @@ export function mountCircularGallery(root, opts = {}) {
       stack.appendChild(layer);
       layerEls.push(layer);
       clipEls.push(layer.querySelector('[data-ccig-clip]'));
-      fitImage(layer.querySelector('image'), i === index ? 'contain' : 'dot');
+      fitImage(layer.querySelector('image'), i === index ? 'cover' : 'dot');
 
       const tab = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       tab.setAttribute('class', 'ccig__dot');
