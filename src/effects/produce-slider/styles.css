@@ -333,6 +333,19 @@ html[dir='ltr'] #products .active-copy {
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
+#products .active-en[hidden] {
+  display: none !important;
+}
+#products .section-heading .heading-en[hidden] {
+  display: none !important;
+}
+html[dir='ltr'] #products .category-nav small {
+  /* Avoid "Fruit / FRUIT" duplication in English */
+  display: none;
+}
+html[dir='ltr'] #products .category-nav button[data-filter='all'] small {
+  display: block;
+}
 #products .active-copy p {
   color: #e0eadb;
   font-size: 15px;

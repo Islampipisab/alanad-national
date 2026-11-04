@@ -643,12 +643,12 @@ html[dir='rtl'] .btn__arrow {
   max-width: 640px;
   margin: 0;
   padding-bottom: 0.5rem;
-  direction: rtl;
+  direction: inherit;
   text-align: start;
 }
 
-html[dir='ltr'] .hero__content {
-  direction: ltr;
+html[dir='ltr'] .hero__title {
+  font-size: clamp(1.75rem, 3.8vw, 3.05rem);
 }
 
 .hero__brand-float {

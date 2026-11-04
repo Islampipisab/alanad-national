@@ -43,6 +43,16 @@ function applyI18n(locale) {
       ? 'العناد الوطنية | توريد الخضار والفواكه'
       : 'Al-Anad National | Fresh produce supply';
 
+  const meta = document.querySelector('meta[name="description"]');
+  if (meta) {
+    meta.setAttribute(
+      'content',
+      locale === 'ar'
+        ? 'العناد الوطنية — كيان تجاري منذ 2007 متخصص بتوريد المحاصيل الزراعية بأعلى معايير الجودة وسلسلة تبريد لا تنقطع.'
+        : 'Al-Anad National — since 2007, supplying fresh produce to the highest quality standards with an unbroken cold chain.',
+    );
+  }
+
   document.querySelectorAll('[data-i18n]').forEach((el) => {
     const value = getByPath(dict, el.dataset.i18n);
     if (typeof value === 'string') el.textContent = value;
@@ -60,6 +70,14 @@ function applyI18n(locale) {
 
   document.querySelectorAll('.produce-name[data-name-ar]').forEach((el) => {
     el.textContent = locale === 'en' ? el.dataset.nameEn : el.dataset.nameAr;
+  });
+
+  const brandName = dict.brand?.name || '';
+  document.querySelectorAll('.nav__brand').forEach((el) => {
+    if (brandName) el.setAttribute('aria-label', brandName);
+  });
+  document.querySelectorAll('.nav__logo, .footer img[alt]').forEach((el) => {
+    if (brandName) el.setAttribute('alt', brandName);
   });
 
   document.querySelectorAll('.lang__btn').forEach((btn) => {
@@ -85,6 +103,8 @@ function splitHeadings() {
       .map((w) => `<span class="split-w"><span>${w}</span></span>`)
       .join(' ');
   });
+  // Lang switch rebuilds nodes after intro tweens — clear leftover yPercent clips
+  gsap.set('[data-split] .split-w > span', { yPercent: 0, clearProps: 'transform' });
 }
 
 function renderPartners() {
@@ -528,9 +548,16 @@ function initUI() {
     btn.addEventListener('click', () => {
       const next = btn.dataset.lang;
       if (!next || next === langNow()) return;
+      // Kill split intros so rebuilt EN/AR words are not left translated off-screen
+      gsap.killTweensOf('[data-split] .split-w > span');
       applyI18n(next);
       splitHeadings();
+      // Force reveal copy that may still be mid hero intro tween
+      gsap.set('.hero__sub, .hero__lead, .hero__ctas .btn, .hero__badge, .hero__stats', {
+        clearProps: 'opacity,transform',
+      });
       ScrollTrigger.refresh();
+      requestAnimationFrame(() => liquidNav?.refresh?.());
     });
   });
 

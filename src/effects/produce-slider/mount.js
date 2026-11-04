@@ -108,8 +108,27 @@ export function mountProduceSlider(section, opts = {}) {
     });
     const headingEn = section.querySelector('.heading-en');
     if (headingEn) {
-      headingEn.textContent =
-        lang === 'en' ? 'FRESHNESS IN EVERY HARVEST' : 'Our Fresh Products';
+      // English subtitle under Arabic title — hide when UI is already EN
+      headingEn.hidden = lang === 'en';
+      headingEn.textContent = 'Our Fresh Products';
+    }
+    const filterNavEl = section.querySelector('.category-nav');
+    if (filterNavEl) {
+      filterNavEl.setAttribute(
+        'aria-label',
+        lang === 'en' ? 'Filter products' : 'تصفية المنتجات',
+      );
+      const allSmall = filterNavEl.querySelector('button[data-filter="all"] small');
+      if (allSmall) {
+        allSmall.textContent = lang === 'en' ? `${all.length} varieties` : `ALL · ${all.length}`;
+      }
+    }
+    const pagination = section.querySelector('.pagination');
+    if (pagination) {
+      pagination.setAttribute(
+        'aria-label',
+        lang === 'en' ? 'Choose product' : 'اختر منتجاً',
+      );
     }
   }
 
