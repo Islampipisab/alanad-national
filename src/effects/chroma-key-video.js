@@ -88,11 +88,10 @@ export function mountChromaKeyVideo(
     float luma = dot(c.rgb, vec3(0.299, 0.587, 0.114));
     float mx = max(c.r, max(c.g, c.b));
     float signal = max(luma, mx);
-    // Pure black → a=0; soft ramp into subject (uSim..uSim+uSoft)
+    // Crush compressed near-black plate hard; soft ramp only into subject
     float a = smoothstep(uSim, uSim + max(uSoft, 0.001), signal);
-    // Extra crush on deep plate + gentle edge feather
-    a *= smoothstep(0.02, 0.14, signal);
-    a = smoothstep(0.0, 0.85, a);
+    a *= smoothstep(uSim * 0.5, uSim + uSoft * 0.55, signal);
+    a = pow(clamp(a, 0.0, 1.0), 1.55);
     o = vec4(c.rgb * a, a);
   }`
     : `#version 300 es
@@ -140,8 +139,8 @@ export function mountChromaKeyVideo(
       float mx=max(c.r,max(c.g,c.b));
       float signal=max(luma,mx);
       float a=smoothstep(uSim,uSim+max(uSoft,.001),signal);
-      a*=smoothstep(.02,.14,signal);
-      a=smoothstep(0.,.85,a); gl_FragColor=vec4(c.rgb*a,a); }`
+      a*=smoothstep(uSim*.5,uSim+uSoft*.55,signal);
+      a=pow(clamp(a,0.,1.),1.55); gl_FragColor=vec4(c.rgb*a,a); }`
       : `precision highp float; uniform sampler2D uTex; uniform float uSim; uniform float uSoft; varying vec2 v;
       void main(){ vec2 uv=vec2(v.x,1.-v.y); vec4 c=texture2D(uTex,uv);
       float luma=dot(c.rgb,vec3(.299,.587,.114));

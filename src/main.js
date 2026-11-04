@@ -191,7 +191,7 @@ function initHeroProduce() {
       video: videoEl,
       poster,
       key: 'black',
-      similarity: 0.04,
+      similarity: 0.09,
       softness: 0.2,
       dprMax: 1.5,
       reduced,

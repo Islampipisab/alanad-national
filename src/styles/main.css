@@ -699,14 +699,19 @@ html[dir='ltr'] .hero__content {
   mix-blend-mode: normal;
 }
 
+.hero__brand-float.is-keyed {
+  /* Avoid rectangular plate shadow from residual matte */
+  filter: none;
+}
+
 .hero__brand-float.is-keyed .hero__produce-key {
   display: block;
   position: relative;
   width: 100%;
   height: 100%;
   background: transparent;
-  /* Soft silhouette — shadow follows keyed alpha, not the plate */
-  filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.32));
+  /* Soft silhouette follows keyed alpha only */
+  filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.38));
 }
 
 
