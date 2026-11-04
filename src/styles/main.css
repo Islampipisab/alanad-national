@@ -82,7 +82,8 @@ body {
     radial-gradient(ellipse at center, transparent 40%, rgba(8, 41, 29, 0.28) 100%);
 }
 
-header.nav,
+/* Keep main/footer above fixed GlassFold — do NOT set position on header.nav
+   (that would override position:fixed and break sticky scroll-up). */
 main,
 footer.footer {
   position: relative;
@@ -349,10 +350,10 @@ textarea {
   justify-content: center;
 }
 
-/* Nimbus-inspired liquid glass shell (dark tone for green site) */
+/* Liquid pill — no frost/blur; flat dark shell over GlassFold */
 .liquid-nav {
-  --ln-glass: rgba(255, 255, 255, 0.07);
-  --ln-stroke: rgba(255, 255, 255, 0.14);
+  --ln-glass: rgba(6, 28, 20, 0.92);
+  --ln-stroke: rgba(255, 255, 255, 0.12);
   --ln-water: rgba(168, 220, 198, 0.28);
   --ln-water-hi: rgba(214, 245, 228, 0.45);
   --ln-tomato: #e23a2e;
@@ -362,14 +363,9 @@ textarea {
   position: relative;
   padding: 0.28rem;
   border-radius: 999px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
-    var(--ln-glass);
+  background: var(--ln-glass);
   border: 1px solid var(--ln-stroke);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 -8px 18px rgba(0, 0, 0, 0.18),
-    0 10px 28px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   isolation: isolate;
