@@ -46,10 +46,28 @@ export function mountProduceSlider(section, opts = {}) {
     return cat === 'fruit' ? 'فاكهة' : 'خضار';
   }
 
+  /** Windowed dots — avoids a 75-wide strip that forces a white scrollbar. */
+  const DOT_WINDOW = 15;
+
   function rebuildDots() {
     if (!pagination) return;
     pagination.innerHTML = '';
-    data.forEach((item, i) => {
+    if (!data.length) return;
+
+    let start = Math.max(0, index - Math.floor(DOT_WINDOW / 2));
+    let end = Math.min(data.length, start + DOT_WINDOW);
+    start = Math.max(0, end - DOT_WINDOW);
+
+    if (start > 0) {
+      const more = document.createElement('span');
+      more.className = 'pagination-more';
+      more.setAttribute('aria-hidden', 'true');
+      more.textContent = '···';
+      pagination.appendChild(more);
+    }
+
+    for (let i = start; i < end; i++) {
+      const item = data[i];
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.dataset.go = String(i);
@@ -57,7 +75,15 @@ export function mountProduceSlider(section, opts = {}) {
       if (i === index) btn.classList.add('is-active');
       btn.addEventListener('click', () => goTo(i));
       pagination.appendChild(btn);
-    });
+    }
+
+    if (end < data.length) {
+      const more = document.createElement('span');
+      more.className = 'pagination-more';
+      more.setAttribute('aria-hidden', 'true');
+      more.textContent = '···';
+      pagination.appendChild(more);
+    }
   }
 
   function applyPhoto(el, item) {
@@ -146,12 +172,7 @@ export function mountProduceSlider(section, opts = {}) {
       if (rightType) rightType.textContent = data[rightIndex].cat === 'fruit' ? '✿' : '♢';
     }
 
-    pagination?.querySelectorAll('button').forEach((dot, i) => {
-      dot.classList.toggle('is-active', i === index);
-      if (i === index) {
-        dot.scrollIntoView({ block: 'nearest', inline: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
-      }
-    });
+    rebuildDots();
 
     filterNav?.querySelectorAll('button[data-filter]').forEach((btn) => {
       btn.classList.toggle('is-active', btn.dataset.filter === filter);

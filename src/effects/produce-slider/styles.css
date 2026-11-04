@@ -145,12 +145,16 @@
   z-index: 2;
   max-width: 1440px;
   margin: 0 auto;
+  padding-inline: clamp(2.5rem, 5vw, 4rem);
 }
 #products .slider-stage {
   height: 420px;
   position: relative;
-  perspective: 1400px;
-  transform-style: preserve-3d;
+  /* Flat stacking — preserve-3d + rotateY let side cards paint over active copy */
+  perspective: none;
+  transform-style: flat;
+  overflow: hidden;
+  isolation: isolate;
 }
 
 #products .slide {
@@ -168,8 +172,10 @@
     transform 0.85s cubic-bezier(0.2, 0.75, 0.2, 1),
     opacity 0.65s,
     width 0.85s,
-    filter 0.85s;
-  transform-style: preserve-3d;
+    filter 0.85s,
+    left 0.85s,
+    right 0.85s;
+  transform-style: flat;
 }
 #products .slide-photo {
   position: absolute;
@@ -207,10 +213,11 @@
    direction:ltr locks column geometry so RTL page dir cannot mirror them. */
 #products .active-slide {
   left: 50%;
-  width: min(820px, 74vw);
+  width: min(720px, 58vw);
   height: 380px;
-  transform: translate(-50%, -50%) rotateY(0) scale(1);
-  z-index: 3;
+  transform: translate(-50%, -50%) scale(1);
+  z-index: 20; /* always above peek cards */
+  isolation: isolate;
   display: grid;
   direction: ltr;
   grid-template-columns: 1.15fr 0.85fr;
@@ -254,7 +261,7 @@ html[dir='ltr'] #products .active-slide {
 #products .active-copy {
   grid-area: copy;
   position: relative;
-  z-index: 2;
+  z-index: 30; /* never under peek photos */
   left: auto;
   right: auto;
   top: auto;
@@ -268,11 +275,12 @@ html[dir='ltr'] #products .active-slide {
   padding: 1.35rem 1.4rem;
   margin: 0;
   border-radius: 0;
-  background: rgba(6, 32, 22, 0.92);
+  background: rgba(6, 32, 22, 0.96);
   backdrop-filter: blur(16px) saturate(1.1);
   -webkit-backdrop-filter: blur(16px) saturate(1.1);
   border-inline-start: 1px solid rgba(197, 239, 75, 0.22);
   box-sizing: border-box;
+  pointer-events: auto;
 }
 html[dir='rtl'] #products .active-copy {
   left: auto;
@@ -375,10 +383,12 @@ html[dir='ltr'] #products .active-copy {
 }
 
 #products .side-slide {
-  width: min(390px, 34vw);
+  width: min(280px, 24vw);
   height: 300px;
-  opacity: 0.8;
+  opacity: 0.72;
   filter: saturate(0.85);
+  z-index: 1;
+  pointer-events: none; /* peeks never steal hits from active CTA */
 }
 #products .side-slide .slide-photo {
   z-index: 0;
@@ -471,13 +481,18 @@ html[dir='ltr'] #products .active-copy {
 #products .pagination {
   display: flex;
   align-items: center;
-  gap: 5px;
-  max-width: min(520px, 55vw);
-  overflow-x: auto;
-  overflow-y: hidden;
+  justify-content: center;
+  gap: 6px;
+  max-width: min(420px, 55vw);
+  overflow: hidden; /* no scrollbar — windowed dots */
   padding: 6px 4px;
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
+}
+#products .pagination-more {
+  color: rgba(197, 239, 75, 0.55);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 1px;
+  user-select: none;
 }
 #products .pagination button {
   flex: 0 0 auto;
@@ -496,11 +511,13 @@ html[dir='ltr'] #products .active-copy {
   box-shadow: 0 0 12px rgba(197, 239, 75, 0.55);
 }
 #products .progress-track {
+  flex: 0 0 auto;
   width: 110px;
   height: 2px;
   background: rgba(255, 255, 255, 0.15);
   border-radius: 5px;
   overflow: hidden;
+  align-self: center;
 }
 #products .progress-bar {
   display: block;
@@ -582,15 +599,17 @@ html[dir='ltr'] #products .active-copy {
 }
 
 @media (min-width: 900px) {
+  /* Peeks sit fully outside the active card box (no geom cover of copy) */
   #products .side-slide[data-slot='0'] {
-    left: 7%;
-    transform: translateY(-50%) rotateY(17deg) scale(0.88);
+    left: 50%;
+    right: auto;
+    transform: translate(calc(-50% - min(560px, 48vw)), -50%) scale(0.82);
     z-index: 1;
   }
   #products .side-slide[data-slot='2'] {
-    right: 7%;
-    left: auto;
-    transform: translateY(-50%) rotateY(-17deg) scale(0.88);
+    left: 50%;
+    right: auto;
+    transform: translate(calc(-50% + min(560px, 48vw)), -50%) scale(0.82);
     z-index: 1;
   }
 }
