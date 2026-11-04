@@ -178,7 +178,45 @@
   background-position: center;
   background-color: #0b3022;
   transition: transform 1.2s cubic-bezier(0.2, 0.7, 0.2, 1);
-  filter: saturate(1.08);
+  filter: saturate(1.12);
+  overflow: hidden;
+}
+#products .slide-photo .produce-shot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+}
+/* Mixed produce collage — every cell shows real fruit/veg */
+#products .slide-photo.is-collage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 3px;
+  background: #041910;
+}
+#products .slide-photo.is-collage .produce-shot {
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+}
+#products .slide-photo.is-collage .produce-shot:nth-child(n + 5) {
+  display: none;
+}
+#products .slide-photo.is-single {
+  display: block;
+}
+/* Side peek cards: two-up so produce still reads at a glance */
+#products .side-slide .slide-photo.is-collage {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+}
+#products .side-slide .slide-photo.is-collage .produce-shot:nth-child(n + 3) {
+  display: none;
 }
 #products .slide::after {
   content: '';

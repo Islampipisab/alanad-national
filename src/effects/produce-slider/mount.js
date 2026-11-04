@@ -4,6 +4,7 @@
  * Integrates with site locale; local product photography.
  */
 
+/** Local produce photography only — mockup needs visible fruit/veg in every card. */
 const CATEGORIES = [
   {
     id: 'leafy',
@@ -14,7 +15,7 @@ const CATEGORIES = [
     descAr: 'أوراق خضراء مختارة بعناية، بطعم طازج وجودة تحافظ على قيمتها.',
     descEn: 'Carefully selected leafy greens, fresh in taste and quality.',
     icon: '♧',
-    image: '/img/products/lettuce.jpg',
+    images: ['/img/products/lettuce.jpg', '/img/products/romaine.jpg', '/img/products/spinach.jpg'],
   },
   {
     id: 'fruits',
@@ -26,10 +27,12 @@ const CATEGORIES = [
     descEn:
       'A vibrant selection of fresh local and imported fruits, delivered with the quality you expect.',
     icon: '✿',
-    // Package Unsplash hero — mixed fruit closer to glass mockup
-    image:
-      'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=1400&q=90',
-    imageFallback: '/img/products/strawberry.jpg',
+    images: [
+      '/img/products/apple.jpg',
+      '/img/products/strawberry.jpg',
+      '/img/products/orange.jpg',
+      '/img/products/green-grapes.jpg',
+    ],
   },
   {
     id: 'vegetables',
@@ -40,7 +43,12 @@ const CATEGORIES = [
     descAr: 'خضروات متنوعة يتم اختيارها وتجهيزها لتلبية احتياجات عملائنا على مدار العام.',
     descEn: 'A versatile range of vegetables selected to serve our customers throughout the year.',
     icon: '♢',
-    image: '/img/products/red-pepper.jpg',
+    images: [
+      '/img/products/red-pepper.jpg',
+      '/img/products/green-pepper.jpg',
+      '/img/products/carrot.jpg',
+      '/img/products/cucumber.jpg',
+    ],
   },
   {
     id: 'staple',
@@ -51,7 +59,7 @@ const CATEGORIES = [
     descAr: 'محاصيل أساسية من مصادر موثوقة، مع اهتمام بالجودة واستمرارية التوريد.',
     descEn: 'Essential crops from trusted sources, with a focus on quality and dependable supply.',
     icon: '▱',
-    image: '/img/products/potato.jpg',
+    images: ['/img/products/potato.jpg', '/img/products/onion.jpg', '/img/products/garlic.jpg'],
   },
   {
     id: 'seasonal',
@@ -62,7 +70,7 @@ const CATEGORIES = [
     descAr: 'منتجات موسمية مختارة وفق توافر المحاصيل وأفضل مواسم الحصاد.',
     descEn: 'Seasonal selections chosen around availability and the best harvest periods.',
     icon: '◷',
-    image: '/img/products/tomato.jpg',
+    images: ['/img/products/tomato.jpg', '/img/products/watermelon.jpg', '/img/products/mango.jpg'],
   },
 ];
 
@@ -98,16 +106,19 @@ export function mountProduceSlider(section, opts = {}) {
     const photo = el?.querySelector('.slide-photo');
     const item = data[i];
     if (!photo || !item) return;
-    const primary = item.image;
-    const fallback = item.imageFallback;
-    photo.style.backgroundImage = `url("${primary}")`;
-    if (fallback && /^https?:/.test(primary)) {
-      const probe = new Image();
-      probe.onerror = () => {
-        photo.style.backgroundImage = `url("${fallback}")`;
-      };
-      probe.src = primary;
-    }
+    const srcs = item.images?.length ? item.images : item.image ? [item.image] : [];
+    if (!srcs.length) return;
+
+    // Prefer real <img> collage so produce is always visible (no remote CDN)
+    photo.style.backgroundImage = 'none';
+    photo.classList.toggle('is-collage', srcs.length > 1);
+    photo.classList.toggle('is-single', srcs.length === 1);
+    photo.innerHTML = srcs
+      .map(
+        (src) =>
+          `<img class="produce-shot" src="${src}" alt="" loading="eager" decoding="async" draggable="false" />`,
+      )
+      .join('');
   }
 
   function syncCopyAttrs() {
