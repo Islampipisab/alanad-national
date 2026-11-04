@@ -341,55 +341,37 @@
                 <div class="slide-photo"></div>
                 <div class="side-shade"></div>
                 <div class="side-copy">
-                  <span class="category-icon">♧</span>
-                  <h3>الخضروات الورقية</h3>
-                  <span class="side-en">LEAFY GREENS</span>
+                  <span class="category-icon">♢</span>
+                  <h3>طماطم</h3>
+                  <span class="side-en">VEGETABLE</span>
                 </div>
               </article>
 
-              <article class="slide active-slide" data-index="1">
+              <article class="slide active-slide" data-index="0">
                 <div class="photo-wrap">
                   <div class="slide-photo"></div>
-                  <span
-                    class="photo-tag"
-                    data-ar="مختارة بعناية"
-                    data-en="CAREFULLY SELECTED"
-                    >مختارة بعناية</span
-                  >
-                  <span class="photo-orbit orbit-a"></span>
-                  <span class="photo-orbit orbit-b"></span>
+                  <span class="photo-tag">مختارة بعناية</span>
                 </div>
                 <div class="active-copy">
-                  <span class="category-icon">✿</span>
-                  <span
-                    class="copy-kicker"
-                    data-ar="من أجود المزارع"
-                    data-en="FROM TRUSTED FARMS"
-                    >من أجود المزارع</span
-                  >
-                  <h3>الفواكه</h3>
-                  <span class="active-en">Fruits</span>
-                  <p>
-                    تشكيلة غنية من الفواكه الطازجة، المحلية والمستوردة، لتصل إليكم بجودة
-                    تستحقونها.
-                  </p>
+                  <span class="product-type copy-kicker">خضار</span>
+                  <h3>طماطم</h3>
+                  <span class="active-en">Tomato</span>
+                  <p>خضار طازج مختار بعناية من أجود المصادر.</p>
                   <a class="product-cta" href="#contact">
-                    <span data-ar="استعرض المنتجات" data-en="Explore products"
-                      >استعرض المنتجات</span
-                    >
+                    <span>اطلب هذا الصنف</span>
                     <b>↗</b>
                   </a>
-                  <span class="slide-count"><strong>02</strong> / 05</span>
+                  <span class="slide-count"><strong>01</strong> / 75</span>
                 </div>
               </article>
 
-              <article class="slide side-slide" data-slot="2" data-index="2">
+              <article class="slide side-slide" data-slot="2" data-index="1">
                 <div class="slide-photo"></div>
                 <div class="side-shade"></div>
                 <div class="side-copy">
                   <span class="category-icon">♢</span>
-                  <h3>الخضروات</h3>
-                  <span class="side-en">FRESH VEGETABLES</span>
+                  <h3>خيار</h3>
+                  <span class="side-en">VEGETABLE</span>
                 </div>
               </article>
             </div>
@@ -400,55 +382,33 @@
           </div>
 
           <div class="slider-controls">
-            <div class="pagination" aria-label="Choose category">
-              <button type="button" data-go="0" aria-label="Leafy greens"></button>
-              <button type="button" data-go="1" class="is-active" aria-label="Fruits"></button>
-              <button type="button" data-go="2" aria-label="Vegetables"></button>
-              <button type="button" data-go="3" aria-label="Essential crops"></button>
-              <button type="button" data-go="4" aria-label="Seasonal products"></button>
-            </div>
+            <div class="pagination" aria-label="Choose product"></div>
             <div class="progress-track"><span class="progress-bar"></span></div>
             <button class="autoplay-toggle" type="button" aria-label="Pause autoplay">
               <span>Ⅱ</span>
             </button>
           </div>
 
-          <nav class="category-nav" aria-label="Product categories">
-            <!-- LTR visual order matches glass mockup: Seasonal … Fruits(active) -->
-            <button type="button" data-go="4">
-              <span class="tab-icon">◷</span
+          <nav class="category-nav" aria-label="Filter products">
+            <button type="button" data-filter="all" class="is-active">
+              <span class="tab-icon">✦</span
               ><span
-                ><b data-ar="منتجات موسمية" data-en="Seasonal">منتجات موسمية</b
-                ><small>SEASONAL</small></span
+                ><b data-ar="الكل" data-en="All">الكل</b
+                ><small>ALL · 75</small></span
               >
             </button>
-            <button type="button" data-go="3">
-              <span class="tab-icon">▱</span
-              ><span
-                ><b data-ar="المحاصيل الأساسية" data-en="Essential Crops"
-                  >المحاصيل الأساسية</b
-                ><small>ESSENTIAL CROPS</small></span
-              >
-            </button>
-            <button type="button" data-go="0">
-              <span class="tab-icon">♧</span
-              ><span
-                ><b data-ar="الخضروات الورقية" data-en="Leafy Greens">الخضروات الورقية</b
-                ><small>LEAFY GREENS</small></span
-              >
-            </button>
-            <button type="button" data-go="2">
-              <span class="tab-icon">♢</span
-              ><span
-                ><b data-ar="الخضروات" data-en="Vegetables">الخضروات</b
-                ><small>VEGETABLES</small></span
-              >
-            </button>
-            <button type="button" data-go="1" class="is-active">
+            <button type="button" data-filter="fruit">
               <span class="tab-icon">✿</span
               ><span
-                ><b data-ar="الفواكه" data-en="Fruits">الفواكه</b
-                ><small>FRUITS</small></span
+                ><b data-ar="فاكهة" data-en="Fruit">فاكهة</b
+                ><small>FRUIT</small></span
+              >
+            </button>
+            <button type="button" data-filter="veg">
+              <span class="tab-icon">♢</span
+              ><span
+                ><b data-ar="خضار" data-en="Vegetable">خضار</b
+                ><small>VEGETABLE</small></span
               >
             </button>
           </nav>
