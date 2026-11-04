@@ -422,48 +422,55 @@ function initMotion(lenis) {
     });
   });
 
-  // Sticky show-on-scroll-up — lockY hysteresis (Lenis per-frame dy is tiny)
+  // Sticky: show on scroll-up anywhere mid-page; hide/subtle on scroll-down
   const nav = document.querySelector('#nav');
-  let lockY = 0;
+  let lastY = 0;
+  let dirAcc = 0;
   let navHidden = false;
   let navRaf = 0;
   let pendingY = 0;
+  const DOWN_HIDE = 14;
+  const UP_SHOW = 10;
+
+  const readY = () =>
+    typeof lenis?.scroll === 'number'
+      ? lenis.scroll
+      : window.scrollY || document.documentElement.scrollTop || 0;
 
   const applyNavState = (y) => {
     if (!nav) return;
     const menuOpen = document.querySelector('#navLinks')?.classList.contains('is-open');
     const keep = menuOpen || nav.contains(document.activeElement);
-    nav.classList.toggle('is-solid', y > 40);
+    nav.classList.toggle('is-solid', y > 40 && !navHidden);
+
+    const dy = y - lastY;
+    lastY = y;
+    if (Math.abs(dy) >= 0.4) {
+      dirAcc = Math.sign(dy) === Math.sign(dirAcc) || dirAcc === 0 ? dirAcc + dy : dy;
+    }
 
     let nextHidden = navHidden;
-    if (keep || y < 72) {
+    if (keep || y < 56) {
       nextHidden = false;
-      lockY = y;
-    } else if (!navHidden) {
-      if (y - lockY > 24) {
-        nextHidden = true;
-        lockY = y;
-      } else if (y < lockY) {
-        lockY = y;
-      }
-    } else if (lockY - y > 18) {
+      dirAcc = 0;
+    } else if (dirAcc > DOWN_HIDE) {
+      nextHidden = true;
+      dirAcc = 0;
+    } else if (dirAcc < -UP_SHOW) {
+      // Mid-page scroll-up → always reveal (no need to return to top)
       nextHidden = false;
-      lockY = y;
-    } else if (y > lockY) {
-      lockY = y;
+      dirAcc = 0;
     }
 
     if (nextHidden !== navHidden) {
       navHidden = nextHidden;
       nav.classList.toggle('is-hidden', navHidden);
+      nav.classList.toggle('is-solid', y > 40 && !navHidden);
     }
   };
 
   const onNavScroll = () => {
-    pendingY =
-      typeof lenis?.scroll === 'number'
-        ? lenis.scroll
-        : window.scrollY || document.documentElement.scrollTop || 0;
+    pendingY = readY();
     if (navRaf) return;
     navRaf = requestAnimationFrame(() => {
       navRaf = 0;
@@ -471,15 +478,17 @@ function initMotion(lenis) {
     });
   };
 
+  lastY = readY();
   if (lenis) {
     lenis.on('scroll', onNavScroll);
   }
-  // Fallback for non-Lenis / programmatic scroll
   window.addEventListener('scroll', onNavScroll, { passive: true });
   nav?.addEventListener('focusin', () => {
     navHidden = false;
-    lockY = pendingY;
+    dirAcc = 0;
+    lastY = readY();
     nav?.classList.remove('is-hidden');
+    nav?.classList.toggle('is-solid', lastY > 40);
   });
 
   // Liquid glass navbar — scroll sync + tomato morph on click
