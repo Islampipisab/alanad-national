@@ -1,8 +1,10 @@
 /**
  * Full-catalog glass product slider — one slide per produce item (~75).
  * Photo and copy never overlap (side-by-side glass panels).
+ * Navigate via horizontal wheel/trackpad (smooth GSAP), autoplay, and dots.
  */
 
+import gsap from 'gsap';
 import catalog from '../../data/products.json';
 
 const CTA = {
@@ -19,8 +21,6 @@ export function mountProduceSlider(section, opts = {}) {
 
   const stage = section.querySelector('.slider-stage');
   const active = section.querySelector('.active-slide');
-  const prev = section.querySelector('.nav-prev');
-  const next = section.querySelector('.nav-next');
   const pagination = section.querySelector('.pagination');
   const progress = section.querySelector('.progress-bar');
   const pauseButton = section.querySelector('.autoplay-toggle');
@@ -36,14 +36,16 @@ export function mountProduceSlider(section, opts = {}) {
   let lang = opts.locale === 'en' ? 'en' : 'ar';
   let timer = null;
   let paused = reduceMotion;
-  let startX = 0;
-  let startY = 0;
-  let pointerDown = false;
-  let dragLocked = null; // null | 'x' | 'y'
-  let activePointerId = null;
+  let animating = false;
+  let wheelAcc = 0;
+  let wheelLockUntil = 0;
   const interval = 4500;
-  const DRAG_LOCK = 10;
-  const DRAG_FLIP = 48;
+  const WHEEL_STEP = 40;
+  const WHEEL_COOLDOWN = 420;
+  const slides = () =>
+    [section.querySelector('.side-slide[data-slot="0"]'), active, section.querySelector('.side-slide[data-slot="2"]')].filter(
+      Boolean,
+    );
 
   function typeLabel(cat) {
     if (lang === 'en') return cat === 'fruit' ? 'Fruit' : 'Vegetable';
@@ -196,11 +198,67 @@ export function mountProduceSlider(section, opts = {}) {
     }
   }
 
+  function animateTo(nextIndex, dir = 1) {
+    if (!data.length) return;
+    const target = ((nextIndex % data.length) + data.length) % data.length;
+    if (target === index && !animating) {
+      restartTimer();
+      return;
+    }
+
+    if (reduceMotion || !active) {
+      index = target;
+      render();
+      restartTimer();
+      return;
+    }
+
+    if (animating) return;
+    animating = true;
+    clearInterval(timer);
+
+    const cards = slides();
+    const travel = Math.min(160, (stage?.clientWidth || 640) * 0.18) * dir;
+
+    gsap.killTweensOf(cards);
+    gsap
+      .timeline({
+        defaults: { ease: 'power2.inOut' },
+        onComplete: () => {
+          index = target;
+          render();
+          gsap.set(cards, { x: -travel * 0.35, opacity: 0.72 });
+          gsap.to(cards, {
+            x: 0,
+            opacity: 1,
+            duration: 0.42,
+            ease: 'power2.out',
+            stagger: 0.03,
+            onComplete: () => {
+              animating = false;
+              restartTimer();
+            },
+          });
+        },
+      })
+      .to(cards, {
+        x: travel,
+        opacity: 0.35,
+        duration: 0.32,
+        stagger: { each: 0.02, from: dir > 0 ? 'start' : 'end' },
+      });
+  }
+
   function goTo(nextIndex) {
     if (!data.length) return;
-    index = ((nextIndex % data.length) + data.length) % data.length;
-    render();
-    restartTimer();
+    const target = ((nextIndex % data.length) + data.length) % data.length;
+    const delta = target - index;
+    // Shortest wrap direction for animation sense
+    let dir = delta === 0 ? 1 : delta > 0 ? 1 : -1;
+    if (Math.abs(delta) > data.length / 2) dir *= -1;
+    // Visual: positive dir slides content toward inline-start
+    const rtl = document.documentElement.dir === 'rtl';
+    animateTo(target, rtl ? -dir : dir);
   }
 
   function setFilter(next) {
@@ -217,8 +275,8 @@ export function mountProduceSlider(section, opts = {}) {
     timer = null;
     if (!paused && !reduceMotion && data.length > 1) {
       timer = setInterval(() => {
-        index = (index + 1) % data.length;
-        render();
+        if (animating) return;
+        goTo(index + 1);
       }, interval);
     }
   }
@@ -241,8 +299,6 @@ export function mountProduceSlider(section, opts = {}) {
     render();
   }
 
-  prev?.addEventListener('click', () => goTo(index - 1));
-  next?.addEventListener('click', () => goTo(index + 1));
   pauseButton?.addEventListener('click', () => setPaused(!paused));
 
   filterNav?.querySelectorAll('button[data-filter]').forEach((btn) => {
@@ -260,95 +316,45 @@ export function mountProduceSlider(section, opts = {}) {
   section.addEventListener('focusin', () => clearInterval(timer));
   section.addEventListener('focusout', restartTimer);
 
-  function isDragIgnoreTarget(t) {
-    return !!t?.closest?.(
-      'a, button, input, textarea, select, label, .nav-arrow, .autoplay-toggle, .pagination, .category-nav',
-    );
-  }
-
-  function endDrag(e) {
-    if (!pointerDown) return;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-    const wasHorizontal = dragLocked === 'x';
-    if (activePointerId != null && stage?.hasPointerCapture?.(activePointerId)) {
-      try {
-        stage.releasePointerCapture(activePointerId);
-      } catch {
-        /* ignore */
-      }
-    }
-    stage?.classList.remove('is-dragging');
-    pointerDown = false;
-    dragLocked = null;
-    activePointerId = null;
-
-    if (wasHorizontal && Math.abs(dx) >= DRAG_FLIP && Math.abs(dx) > Math.abs(dy)) {
-      // Natural media feel: drag left → next in LTR; RTL reverses
-      const rtl = document.documentElement.dir === 'rtl';
-      goTo(index + ((dx < 0) === rtl ? 1 : -1));
-    } else {
-      restartTimer();
-    }
-  }
-
-  const onDown = (e) => {
-    if (e.button != null && e.button !== 0) return;
-    if (isDragIgnoreTarget(e.target)) return;
-    pointerDown = true;
-    dragLocked = null;
-    activePointerId = e.pointerId;
-    startX = e.clientX;
-    startY = e.clientY;
-    // Do NOT capture yet — allow vertical page scroll until we lock to X
+  /** Horizontal wheel / trackpad only — vertical page scroll stays free. No drag. */
+  const overSlider = (e) => {
+    if (section.contains(e.target)) return true;
+    const x = e.clientX;
+    const y = e.clientY;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+    const el = document.elementFromPoint(x, y);
+    return !!(el && section.contains(el));
   };
 
-  const onMove = (e) => {
-    if (!pointerDown || e.pointerId !== activePointerId) return;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
+  const onWheel = (e) => {
+    if (!overSlider(e)) return;
 
-    if (!dragLocked) {
-      if (Math.abs(dx) < DRAG_LOCK && Math.abs(dy) < DRAG_LOCK) return;
-      if (Math.abs(dy) > Math.abs(dx)) {
-        // Vertical intent — abandon carousel drag, let the page scroll
-        dragLocked = 'y';
-        pointerDown = false;
-        activePointerId = null;
-        return;
-      }
-      dragLocked = 'x';
-      stage?.classList.add('is-dragging');
-      clearInterval(timer);
-      if (progress) progress.style.transition = 'none';
-      try {
-        stage?.setPointerCapture?.(e.pointerId);
-      } catch {
-        /* ignore */
-      }
-    }
+    const absX = Math.abs(e.deltaX);
+    const absY = Math.abs(e.deltaY);
+    // Trackpads: deltaX for horizontal swipe; shift+wheel maps vertical → horizontal
+    const horizontal = absX > absY || (e.shiftKey && absY > 0);
+    if (!horizontal) return; // let Lenis / page scroll vertical
 
-    if (dragLocked === 'x') {
-      // Stop the browser from treating this as text-select / pan
-      e.preventDefault();
-    }
+    const raw = e.shiftKey && absY >= absX ? e.deltaY : e.deltaX || e.deltaY;
+    if (!raw) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    if (animating || Date.now() < wheelLockUntil) return;
+
+    wheelAcc += raw;
+    if (Math.abs(wheelAcc) < WHEEL_STEP) return;
+
+    const rtl = document.documentElement.dir === 'rtl';
+    const forward = wheelAcc > 0;
+    wheelAcc = 0;
+    wheelLockUntil = Date.now() + WHEEL_COOLDOWN;
+    // Positive wheel → next in LTR; flip for RTL reading direction
+    goTo(index + (forward === rtl ? -1 : 1));
   };
 
-  const onUp = (e) => endDrag(e);
-  const onCancel = (e) => {
-    if (e.pointerId !== activePointerId) return;
-    pointerDown = false;
-    dragLocked = null;
-    activePointerId = null;
-    stage?.classList.remove('is-dragging');
-    restartTimer();
-  };
-
-  stage?.addEventListener('pointerdown', onDown);
-  stage?.addEventListener('pointermove', onMove, { passive: false });
-  stage?.addEventListener('pointerup', onUp);
-  stage?.addEventListener('pointercancel', onCancel);
-  stage?.addEventListener('lostpointercapture', onCancel);
+  // Window capture so we beat Lenis on clearly-horizontal gestures over the slider
+  window.addEventListener('wheel', onWheel, { passive: false, capture: true });
 
   const io = new IntersectionObserver(
     ([entry]) => {
@@ -375,11 +381,8 @@ export function mountProduceSlider(section, opts = {}) {
       io.disconnect();
       section.removeEventListener('mouseenter', onEnter);
       section.removeEventListener('mouseleave', restartTimer);
-      stage?.removeEventListener('pointerdown', onDown);
-      stage?.removeEventListener('pointermove', onMove);
-      stage?.removeEventListener('pointerup', onUp);
-      stage?.removeEventListener('pointercancel', onCancel);
-      stage?.removeEventListener('lostpointercapture', onCancel);
+      window.removeEventListener('wheel', onWheel, { capture: true });
+      gsap.killTweensOf(slides());
       stage?.classList.remove('is-dragging');
     },
   };

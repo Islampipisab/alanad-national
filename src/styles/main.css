@@ -656,8 +656,8 @@ html[dir='ltr'] .hero__content {
 .hero__brand-float {
   position: relative;
   flex: 0 0 auto;
-  width: clamp(180px, 26vw, 320px);
-  aspect-ratio: 1;
+  width: clamp(220px, 34vw, 420px);
+  aspect-ratio: 16 / 10;
   animation: hero-brand-float 5.6s ease-in-out infinite;
   will-change: transform;
   filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.35));
@@ -683,8 +683,8 @@ html[dir='ltr'] .hero__content {
 .hero__brand-float.is-video-fallback .hero__produce-video {
   position: relative;
   opacity: 1;
-  border-radius: 24%;
-  /* Black plate → float over green GlassFold (same trick as old site-bg watermark) */
+  border-radius: 18px;
+  /* Fallback only — black plate via screen blend */
   mix-blend-mode: screen;
 }
 
@@ -693,8 +693,22 @@ html[dir='ltr'] .hero__content {
 }
 
 .hero__brand-float.is-keyed .hero__produce-video {
+  position: absolute;
+  inset: 0;
   opacity: 0;
+  mix-blend-mode: normal;
 }
+
+.hero__brand-float.is-keyed .hero__produce-key {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  /* Soft silhouette — shadow follows keyed alpha, not the plate */
+  filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.32));
+}
+
 
 @keyframes hero-brand-float {
   0%,
@@ -724,7 +738,7 @@ html[dir='ltr'] .hero__content {
   }
 
   .hero__brand-float {
-    width: clamp(112px, 36vw, 168px);
+    width: clamp(160px, 72vw, 300px);
   }
 
   .hero__ctas {

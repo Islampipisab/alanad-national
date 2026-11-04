@@ -5,6 +5,7 @@ import { STRINGS, PARTNERS, CONTACT } from './data/i18n.js';
 import { createGlassFold } from './effects/glass-fold/createGlassFold.js';
 import { mountLiquidNavbar } from './effects/liquid-navbar.js';
 import { mountProduceSlider } from './effects/produce-slider/mount.js';
+import { mountChromaKeyVideo } from './effects/chroma-key-video.js';
 import './effects/produce-slider/styles.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -149,8 +150,9 @@ function initLogoVideo() {
 }
 
 /**
- * Floating hero media beside copy: gemini_generated_video_7b20eecd.mp4
- * muted + playsinline + poster. Direct video (this asset is not a white-key plate).
+ * Floating hero media: gemini_generated_video_3aac0fe1.mp4
+ * Black-plate luma key → soft-edged carrot+metal over GlassFold.
+ * Falls back to mix-blend screen if WebGL key unavailable.
  */
 function initHeroProduce() {
   const canvas = document.querySelector('#heroProduceKey');
@@ -159,25 +161,66 @@ function initHeroProduce() {
   if (!host || !videoEl) return null;
 
   const poster = '/media/hero-poster.jpg';
+  const src = '/media/gemini_generated_video_3aac0fe1.mp4';
   videoEl.muted = true;
   videoEl.defaultMuted = true;
   videoEl.playsInline = true;
   videoEl.loop = true;
-  videoEl.preload = reduced ? 'none' : 'metadata';
+  videoEl.preload = reduced ? 'none' : 'auto';
   videoEl.setAttribute('muted', '');
   videoEl.setAttribute('playsinline', '');
   videoEl.setAttribute('poster', poster);
+  videoEl.crossOrigin = 'anonymous';
 
-  // Hide unused chroma canvas — 7b20eecd is a logo plate, not a white-key shoot
-  if (canvas) canvas.hidden = true;
-  host.classList.add('is-video-fallback');
-  host.classList.remove('is-keyed');
+  const source = videoEl.querySelector('source');
+  if (source) source.setAttribute('src', src);
+  else videoEl.src = src;
+  try {
+    videoEl.load();
+  } catch {
+    /* ignore */
+  }
+
+  /** @type {ReturnType<typeof mountChromaKeyVideo> | null} */
+  let keyed = null;
+
+  if (canvas && !reduced) {
+    canvas.hidden = false;
+    const mounted = mountChromaKeyVideo(canvas, {
+      src,
+      video: videoEl,
+      poster,
+      key: 'black',
+      similarity: 0.04,
+      softness: 0.2,
+      dprMax: 1.5,
+      reduced,
+    });
+    if (mounted.hasGl) {
+      keyed = mounted;
+      host.classList.add('is-keyed');
+      host.classList.remove('is-video-fallback');
+    } else {
+      mounted.destroy();
+      keyed = null;
+    }
+  }
+
+  if (!keyed) {
+    if (canvas) canvas.hidden = true;
+    host.classList.add('is-video-fallback');
+    host.classList.remove('is-keyed');
+  }
 
   const play = () => {
     if (reduced) return;
-    videoEl.play().catch(() => {});
+    if (keyed) keyed.resume();
+    else videoEl.play().catch(() => {});
   };
-  const pause = () => videoEl.pause();
+  const pause = () => {
+    if (keyed) keyed.pause();
+    else videoEl.pause();
+  };
 
   const io = new IntersectionObserver(
     ([entry]) => {
@@ -193,7 +236,8 @@ function initHeroProduce() {
     else if (host.getBoundingClientRect().bottom > 0) play();
   };
   document.addEventListener('visibilitychange', onVis);
-  play();
+  if (keyed) keyed.start();
+  else play();
 
   return {
     pause,
@@ -201,6 +245,7 @@ function initHeroProduce() {
     destroy() {
       io.disconnect();
       document.removeEventListener('visibilitychange', onVis);
+      keyed?.destroy();
       pause();
     },
   };

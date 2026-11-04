@@ -155,18 +155,14 @@
   transform-style: flat;
   overflow: hidden;
   isolation: isolate;
-  touch-action: pan-y; /* vertical page scroll free; JS locks horizontal drag */
-  cursor: grab;
+  touch-action: pan-y; /* vertical page scroll free; horizontal wheel handled in JS */
+  cursor: default;
   user-select: none;
   -webkit-user-select: none;
-}
-#products .slider-stage.is-dragging {
-  cursor: grabbing;
 }
 #products .slider-stage .product-cta,
 #products .slider-stage .product-cta * {
   cursor: pointer;
-  user-select: none;
 }
 
 #products .slide {
@@ -400,11 +396,13 @@ html[dir='ltr'] #products .active-copy {
   opacity: 0.72;
   filter: saturate(0.85);
   z-index: 1;
-  pointer-events: none; /* peeks never steal drag / CTA hits */
+  pointer-events: none; /* peeks never steal CTA hits */
+  will-change: transform, opacity;
 }
 #products .active-slide {
   pointer-events: auto;
   touch-action: pan-y;
+  will-change: transform, opacity;
 }
 #products .side-slide .slide-photo {
   z-index: 0;
@@ -446,42 +444,6 @@ html[dir='ltr'] #products .active-copy {
   letter-spacing: 2px;
   color: #d5e8c6;
   text-transform: uppercase;
-}
-
-#products .nav-arrow {
-  position: absolute;
-  top: 50%;
-  z-index: 6;
-  width: 54px;
-  height: 54px;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 50%;
-  background: rgba(7, 34, 24, 0.55);
-  backdrop-filter: blur(14px);
-  color: var(--ps-lime);
-  font-size: 35px;
-  line-height: 1;
-  cursor: pointer;
-  transform: translateY(-50%);
-  box-shadow: 0 0 24px rgba(197, 239, 75, 0.1);
-  display: grid;
-  place-items: center;
-  transition:
-    background 0.25s,
-    transform 0.25s,
-    color 0.25s,
-    border-color 0.25s;
-}
-#products .nav-arrow:hover {
-  background: var(--ps-lime);
-  color: #092719;
-  transform: translateY(-50%) scale(1.08);
-}
-#products .nav-prev {
-  left: 0;
-}
-#products .nav-next {
-  right: 0;
 }
 
 #products .slider-controls {
@@ -676,18 +638,6 @@ html[dir='ltr'] #products .active-copy {
   #products .side-slide {
     display: none;
   }
-  #products .nav-arrow {
-    width: 43px;
-    height: 43px;
-    font-size: 29px;
-    top: 42%;
-  }
-  #products .nav-prev {
-    left: -7px;
-  }
-  #products .nav-next {
-    right: -7px;
-  }
   #products .slider-controls {
     margin-bottom: 25px;
   }
@@ -738,7 +688,6 @@ html[dir='ltr'] #products .active-copy {
 @media (prefers-reduced-motion: reduce) {
   #products .slide,
   #products .slide-photo,
-  #products .nav-arrow,
   #products .category-nav button,
   #products .pagination button {
     transition-duration: 0.01ms !important;

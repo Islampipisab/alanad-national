@@ -1,5 +1,6 @@
 /**
- * White-background video → canvas with alpha (fallback when WebM alpha unavailable).
+ * Keyed video → canvas with alpha (fallback when WebM alpha unavailable).
+ * key: 'white' removes bright plates; key: 'black' removes dark plates (luma).
  * Perf: capped DPR, pause when hidden / offscreen / reduced-motion.
  */
 export function mountChromaKeyVideo(
@@ -8,23 +9,26 @@ export function mountChromaKeyVideo(
     src,
     video: existingVideo = null,
     poster = '',
-    similarity = 0.88,
-    softness = 0.12,
+    key = 'white',
+    similarity = key === 'black' ? 0.14 : 0.88,
+    softness = key === 'black' ? 0.18 : 0.12,
     dprMax = 1.25,
     reduced = false,
   } = {},
 ) {
+  const ownsVideo = !existingVideo;
+  const keyBlack = key === 'black';
   const gl =
     canvas.getContext('webgl2', {
       alpha: true,
       premultipliedAlpha: false,
-      antialias: false,
+      antialias: true,
       powerPreference: 'low-power',
     }) ||
     canvas.getContext('webgl', {
       alpha: true,
       premultipliedAlpha: false,
-      antialias: false,
+      antialias: true,
       powerPreference: 'low-power',
     });
 
@@ -47,6 +51,7 @@ export function mountChromaKeyVideo(
   if (!gl) {
     return {
       video,
+      hasGl: false,
       async start() {
         await video.play().catch(() => {});
       },
@@ -58,8 +63,10 @@ export function mountChromaKeyVideo(
       },
       destroy() {
         video.pause();
-        video.removeAttribute('src');
-        video.load();
+        if (ownsVideo) {
+          video.removeAttribute('src');
+          video.load();
+        }
       },
     };
   }
@@ -67,7 +74,28 @@ export function mountChromaKeyVideo(
   const vs = `#version 300 es
   in vec2 a; out vec2 v;
   void main(){ v=a*0.5+0.5; gl_Position=vec4(a,0.,1.); }`;
-  const fs = `#version 300 es
+  // Black plate: soft luma matte. White plate: invert bright/desat key.
+  const fs = keyBlack
+    ? `#version 300 es
+  precision highp float;
+  uniform sampler2D uTex;
+  uniform float uSim;
+  uniform float uSoft;
+  in vec2 v; out vec4 o;
+  void main(){
+    vec2 uv = vec2(v.x, 1.0 - v.y);
+    vec4 c = texture(uTex, uv);
+    float luma = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+    float mx = max(c.r, max(c.g, c.b));
+    float signal = max(luma, mx);
+    // Pure black → a=0; soft ramp into subject (uSim..uSim+uSoft)
+    float a = smoothstep(uSim, uSim + max(uSoft, 0.001), signal);
+    // Extra crush on deep plate + gentle edge feather
+    a *= smoothstep(0.02, 0.14, signal);
+    a = smoothstep(0.0, 0.85, a);
+    o = vec4(c.rgb * a, a);
+  }`
+    : `#version 300 es
   precision highp float;
   uniform sampler2D uTex;
   uniform float uSim;
@@ -79,8 +107,8 @@ export function mountChromaKeyVideo(
     float luma = dot(c.rgb, vec3(0.299, 0.587, 0.114));
     float white = smoothstep(uSim - uSoft, uSim + uSoft, luma);
     float sat = max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b));
-    float key = max(white, smoothstep(0.12, 0.02, sat) * smoothstep(0.75, 0.95, luma));
-    float a = 1.0 - key;
+    float keyed = max(white, smoothstep(0.12, 0.02, sat) * smoothstep(0.75, 0.95, luma));
+    float a = 1.0 - keyed;
     o = vec4(c.rgb * a, a);
   }`;
 
@@ -105,13 +133,22 @@ export function mountChromaKeyVideo(
     program = p;
   } else {
     const vs1 = `attribute vec2 a; varying vec2 v; void main(){ v=a*0.5+0.5; gl_Position=vec4(a,0.,1.); }`;
-    const fs1 = `precision highp float; uniform sampler2D uTex; uniform float uSim; uniform float uSoft; varying vec2 v;
+    const fs1 = keyBlack
+      ? `precision highp float; uniform sampler2D uTex; uniform float uSim; uniform float uSoft; varying vec2 v;
+      void main(){ vec2 uv=vec2(v.x,1.-v.y); vec4 c=texture2D(uTex,uv);
+      float luma=dot(c.rgb,vec3(.299,.587,.114));
+      float mx=max(c.r,max(c.g,c.b));
+      float signal=max(luma,mx);
+      float a=smoothstep(uSim,uSim+max(uSoft,.001),signal);
+      a*=smoothstep(.02,.14,signal);
+      a=smoothstep(0.,.85,a); gl_FragColor=vec4(c.rgb*a,a); }`
+      : `precision highp float; uniform sampler2D uTex; uniform float uSim; uniform float uSoft; varying vec2 v;
       void main(){ vec2 uv=vec2(v.x,1.-v.y); vec4 c=texture2D(uTex,uv);
       float luma=dot(c.rgb,vec3(.299,.587,.114));
       float white=smoothstep(uSim-uSoft,uSim+uSoft,luma);
       float sat=max(c.r,max(c.g,c.b))-min(c.r,min(c.g,c.b));
-      float key=max(white, smoothstep(.12,.02,sat)*smoothstep(.75,.95,luma));
-      float a=1.-key; gl_FragColor=vec4(c.rgb*a,a); }`;
+      float keyed=max(white, smoothstep(.12,.02,sat)*smoothstep(.75,.95,luma));
+      float a=1.-keyed; gl_FragColor=vec4(c.rgb*a,a); }`;
     const p = gl.createProgram();
     gl.attachShader(p, compile(gl.VERTEX_SHADER, vs1));
     gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs1));
@@ -198,6 +235,7 @@ export function mountChromaKeyVideo(
 
   return {
     video,
+    hasGl: true,
     async start() {
       wantRun = true;
       resize();
@@ -218,8 +256,10 @@ export function mountChromaKeyVideo(
       cancelAnimationFrame(raf);
       document.removeEventListener('visibilitychange', onVis);
       video.pause();
-      video.removeAttribute('src');
-      video.load();
+      if (ownsVideo) {
+        video.removeAttribute('src');
+        video.load();
+      }
       gl.deleteTexture(tex);
       gl.deleteProgram(program);
       gl.deleteBuffer(buf);
