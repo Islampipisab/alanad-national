@@ -155,6 +155,18 @@
   transform-style: flat;
   overflow: hidden;
   isolation: isolate;
+  touch-action: pan-y; /* vertical page scroll free; JS locks horizontal drag */
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#products .slider-stage.is-dragging {
+  cursor: grabbing;
+}
+#products .slider-stage .product-cta,
+#products .slider-stage .product-cta * {
+  cursor: pointer;
+  user-select: none;
 }
 
 #products .slide {
@@ -388,7 +400,11 @@ html[dir='ltr'] #products .active-copy {
   opacity: 0.72;
   filter: saturate(0.85);
   z-index: 1;
-  pointer-events: none; /* peeks never steal hits from active CTA */
+  pointer-events: none; /* peeks never steal drag / CTA hits */
+}
+#products .active-slide {
+  pointer-events: auto;
+  touch-action: pan-y;
 }
 #products .side-slide .slide-photo {
   z-index: 0;

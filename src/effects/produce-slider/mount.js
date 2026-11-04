@@ -39,7 +39,11 @@ export function mountProduceSlider(section, opts = {}) {
   let startX = 0;
   let startY = 0;
   let pointerDown = false;
+  let dragLocked = null; // null | 'x' | 'y'
+  let activePointerId = null;
   const interval = 4500;
+  const DRAG_LOCK = 10;
+  const DRAG_FLIP = 48;
 
   function typeLabel(cat) {
     if (lang === 'en') return cat === 'fruit' ? 'Fruit' : 'Vegetable';
@@ -256,27 +260,95 @@ export function mountProduceSlider(section, opts = {}) {
   section.addEventListener('focusin', () => clearInterval(timer));
   section.addEventListener('focusout', restartTimer);
 
-  const onDown = (e) => {
-    pointerDown = true;
-    startX = e.clientX;
-    startY = e.clientY;
-    stage?.setPointerCapture?.(e.pointerId);
-  };
-  const onUp = (e) => {
+  function isDragIgnoreTarget(t) {
+    return !!t?.closest?.(
+      'a, button, input, textarea, select, label, .nav-arrow, .autoplay-toggle, .pagination, .category-nav',
+    );
+  }
+
+  function endDrag(e) {
     if (!pointerDown) return;
-    pointerDown = false;
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
-    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+    const wasHorizontal = dragLocked === 'x';
+    if (activePointerId != null && stage?.hasPointerCapture?.(activePointerId)) {
+      try {
+        stage.releasePointerCapture(activePointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+    stage?.classList.remove('is-dragging');
+    pointerDown = false;
+    dragLocked = null;
+    activePointerId = null;
+
+    if (wasHorizontal && Math.abs(dx) >= DRAG_FLIP && Math.abs(dx) > Math.abs(dy)) {
+      // Natural media feel: drag left → next in LTR; RTL reverses
       const rtl = document.documentElement.dir === 'rtl';
       goTo(index + ((dx < 0) === rtl ? 1 : -1));
+    } else {
+      restartTimer();
+    }
+  }
+
+  const onDown = (e) => {
+    if (e.button != null && e.button !== 0) return;
+    if (isDragIgnoreTarget(e.target)) return;
+    pointerDown = true;
+    dragLocked = null;
+    activePointerId = e.pointerId;
+    startX = e.clientX;
+    startY = e.clientY;
+    // Do NOT capture yet — allow vertical page scroll until we lock to X
+  };
+
+  const onMove = (e) => {
+    if (!pointerDown || e.pointerId !== activePointerId) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    if (!dragLocked) {
+      if (Math.abs(dx) < DRAG_LOCK && Math.abs(dy) < DRAG_LOCK) return;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        // Vertical intent — abandon carousel drag, let the page scroll
+        dragLocked = 'y';
+        pointerDown = false;
+        activePointerId = null;
+        return;
+      }
+      dragLocked = 'x';
+      stage?.classList.add('is-dragging');
+      clearInterval(timer);
+      if (progress) progress.style.transition = 'none';
+      try {
+        stage?.setPointerCapture?.(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    if (dragLocked === 'x') {
+      // Stop the browser from treating this as text-select / pan
+      e.preventDefault();
     }
   };
-  stage?.addEventListener('pointerdown', onDown);
-  stage?.addEventListener('pointerup', onUp);
-  stage?.addEventListener('pointercancel', () => {
+
+  const onUp = (e) => endDrag(e);
+  const onCancel = (e) => {
+    if (e.pointerId !== activePointerId) return;
     pointerDown = false;
-  });
+    dragLocked = null;
+    activePointerId = null;
+    stage?.classList.remove('is-dragging');
+    restartTimer();
+  };
+
+  stage?.addEventListener('pointerdown', onDown);
+  stage?.addEventListener('pointermove', onMove, { passive: false });
+  stage?.addEventListener('pointerup', onUp);
+  stage?.addEventListener('pointercancel', onCancel);
+  stage?.addEventListener('lostpointercapture', onCancel);
 
   const io = new IntersectionObserver(
     ([entry]) => {
@@ -304,7 +376,11 @@ export function mountProduceSlider(section, opts = {}) {
       section.removeEventListener('mouseenter', onEnter);
       section.removeEventListener('mouseleave', restartTimer);
       stage?.removeEventListener('pointerdown', onDown);
+      stage?.removeEventListener('pointermove', onMove);
       stage?.removeEventListener('pointerup', onUp);
+      stage?.removeEventListener('pointercancel', onCancel);
+      stage?.removeEventListener('lostpointercapture', onCancel);
+      stage?.classList.remove('is-dragging');
     },
   };
 }
